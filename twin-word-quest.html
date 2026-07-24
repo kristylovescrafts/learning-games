@@ -1002,7 +1002,7 @@ function petReact(sel,kind){ const el=$(sel); if(!el) return; el.classList.remov
 let view={screen:"pick"};
 function go(screen,data){ view={screen,...data}; window.scrollTo(0,0); render(); }
 function render(){
-  if(!state.setup) return renderWelcome();
+  if(!state.setup){ state.setup=true; save(); }   /* skip one-time avatar setup — boot straight to picker */
   buildSky();
   switch(view.screen){
     case "pick": return renderPick();

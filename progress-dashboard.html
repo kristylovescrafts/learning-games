@@ -92,9 +92,29 @@
   .logbadge.none{background:#f1eef9;color:var(--none)}
   .logmeta{color:var(--soft)}
   input[type=file]{display:none}
+
+  /* passcode gate */
+  #gate{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:50;padding:20px}
+  #gate h2{font-family:var(--disp);font-size:1.5rem;margin:0 0 4px}
+  #gate p{font-weight:800;color:var(--soft);margin:0 0 18px}
+  .gdots{display:flex;gap:14px;margin:6px 0 14px}
+  .gdot{width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #ccc}
+  .gdot.on{background:#7c5cff;border-color:#7c5cff}
+  .gpad{display:grid;grid-template-columns:repeat(3,72px);gap:12px}
+  .gkey{font-family:var(--disp);font-weight:600;font-size:1.6rem;padding:14px 0;border-radius:16px;background:#fff;border:none;box-shadow:0 5px 0 var(--line);cursor:pointer}
+  .gkey.blank{background:transparent;box-shadow:none}
+  #gerr{color:#e8503b;font-weight:800;min-height:22px;margin-top:10px}
 </style>
 </head>
 <body>
+<div id="gate">
+  <div style="font-size:2.4rem">🔒</div>
+  <h2>Grown-ups only</h2>
+  <p>Enter the code to see progress</p>
+  <div class="gdots" id="gdots"></div>
+  <div class="gpad" id="gpad"></div>
+  <div id="gerr"></div>
+</div>
 <div class="wrap">
   <div class="top">
     <h1>Kids' <span class="q">Progress</span></h1>
@@ -110,6 +130,31 @@
   <div id="content"></div>
 </div>
 <script>
+
+/* ---- passcode gate (kid-lock, same code as the games) ---- */
+const DASH_PIN="1921";
+(function(){
+  var entry="";
+  var gate=document.getElementById('gate'), dots=document.getElementById('gdots'), pad=document.getElementById('gpad'), err=document.getElementById('gerr');
+  if(sessionStorage.getItem('dashUnlocked')==='1'){ gate.style.display='none'; return; }
+  function draw(){ dots.innerHTML=[0,1,2,3].map(function(i){return '<span class="gdot'+(i<entry.length?' on':'')+'"></span>';}).join(''); }
+  ["1","2","3","4","5","6","7","8","9","","0","⌫"].forEach(function(k){
+    var b=document.createElement('button');
+    if(!k){ b.className='gkey blank'; b.disabled=true; } else { b.className='gkey'; b.textContent=k; }
+    b.onclick=function(){
+      if(k==="⌫"){ entry=entry.slice(0,-1); draw(); return; }
+      if(!k||entry.length>=4) return;
+      entry+=k; draw();
+      if(entry.length===4){
+        if(entry===DASH_PIN){ try{sessionStorage.setItem('dashUnlocked','1');}catch(e){} gate.style.display='none'; }
+        else { err.textContent="That's not the code — try again."; entry=""; setTimeout(draw,220); }
+      }
+    };
+    pad.appendChild(b);
+  });
+  draw();
+})();
+
 /* ---------- level metadata for each app ---------- */
 const META={
   twinWordQuest:{ title:"📖 Word Quest", order:[

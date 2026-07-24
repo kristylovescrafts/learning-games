@@ -1257,7 +1257,8 @@ function movementBreak(cb){
   await load();
   window.addEventListener('resize',()=>{if(round&&$('#token'))positionToken();});
   wireSessionEnd(); retryQueued();
-  if(state.setupDone)renderPick();else renderSetup();
+  if(!state.setupDone){state.setupDone=true;save();}
+  renderPick();
 })();
 </script>
 <form name="progress-report" data-netlify="true" netlify-honeypot="bot-field" hidden>

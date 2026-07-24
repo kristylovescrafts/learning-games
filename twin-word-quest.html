@@ -337,6 +337,7 @@ input[type=range]{accent-color:var(--primary);height:28px}
 .pickwrap{display:inline-block;text-align:center}
 .pickwrap .pickrow{margin-top:20px}
 .pickparent{width:100%;margin-top:18px}
+.homelink{font-family:'Fredoka';font-weight:600;color:#6a5f86;text-decoration:none;font-size:.95rem;background:#fff;padding:8px 16px;border-radius:999px;box-shadow:0 3px 0 #ECE6F8;display:inline-block}
 /* slim in-game top bar */
 .topbar.slim{justify-content:flex-end;gap:10px}
 </style>
@@ -418,7 +419,7 @@ const CURATED_MISSPELL = {
 const MODES = [
   {id:"forest",   name:"Word Forest",            emoji:"🌲", lv:"#34A35F", dk:"#247a44", skill:"read",  prompt:"Tap the word you hear",     blurb:"Hear it, find it"},
   {id:"mountain", name:"Missing Letter Mountain",emoji:"⛰️", lv:"#7C8AA0", dk:"#5b6678", skill:"spell", prompt:"Fill in the missing letter",blurb:"Finish the word"},
-  {id:"station",  name:"Spell It Space Station", emoji:"🚀", lv:"#5B6CF0", dk:"#3E4CC9", skill:"spell", prompt:"Spell the word",            blurb:"Build it letter by letter", count:12},
+  {id:"station",  name:"Spell It Space Station", emoji:"🚀", lv:"#5B6CF0", dk:"#3E4CC9", skill:"spell", prompt:"Spell the word",            blurb:"Build it letter by letter"},
   {id:"beach",    name:"Sentence Builder Beach", emoji:"🏖️", lv:"#E0922B", dk:"#b06f17", skill:"read",  prompt:"Put the words in order",    blurb:"Make the sentence"},
   {id:"city",     name:"Word Detective City",    emoji:"🔍", lv:"#9B6BD0", dk:"#744ba3", skill:"read",  prompt:"Which spelling is right?",  blurb:"Spot the real word"},
   {id:"castle",   name:"Final Word Castle",      emoji:"🏰", lv:"#4661D6", dk:"#2f47ad", skill:"mix",   prompt:"Show all your skills",      blurb:"Mix of everything"},
@@ -1032,6 +1033,7 @@ function renderPick(){
       </div>
       <button class="btn soft pickparent" id="pickParent">👤 Grown-up area</button>
     </div>
+    <div style="text-align:center;margin-top:20px"><a class="homelink" href="/">🏠 All games</a></div>
   </div>`;
   app.querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>{
     state.current=b.dataset.who; state.selectedSet=P().lastSet||0; save(); go("home"); });
@@ -1607,7 +1609,7 @@ function castleSVG(stage, scene){
 let round=null;
 function startMission(modeId){
   const mode=MODES.find(m=>m.id===modeId); const set=SET(); const isFinal=mode.id==="castle";
-  const count=isFinal?8:(mode.count||6); const queue=buildQueue(mode,set,count);
+  const count=10; const queue=buildQueue(mode,set,count);
   round={mode,set,queue,idx:0,total:queue.length,correctCount:0,gemsEarned:0,walker:P().ava};
   go("mission",{mode:modeId});
 }

@@ -310,7 +310,8 @@
 .pickbtn .pgem{font-weight:800;font-size:.85rem;color:#6a5f86}
 .pickbtn.is-thomas{border-color:#f6a623;box-shadow:0 7px 0 #f6a62366}
 .pickbtn.is-tori{border-color:#c86bd0;box-shadow:0 7px 0 #c86bd066}
-.pickparent{width:100%;margin-top:18px}
+.pickparent{width:auto;margin:18px auto 0;padding:10px 20px}
+.homelink{font-family:var(--disp);font-weight:600;color:#6a5f86;text-decoration:none;font-size:.95rem;background:#fff;padding:8px 16px;border-radius:999px;box-shadow:0 3px 0 rgba(0,0,0,.06);display:inline-block}
 .pindots{display:flex;gap:14px;justify-content:center;margin:14px 0}
 .pindot{width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #ccc}
 .pindot.on{background:var(--ink);border-color:var(--ink)}
@@ -468,7 +469,8 @@ function renderPick(){
         <button class="pickbtn is-tori" data-who="tori"><span class="pava">${o.avatar}</span><span class="pnm">${o.name}</span><span class="pgem">💎 ${o.gems||0}</span></button>
       </div>
       <button class="btn ghost pickparent" id="pickParent">👤 Grown-up area</button>
-    </div>`;
+    </div>
+    <div style="text-align:center;margin-top:20px"><a class="homelink" href="/">🏠 All games</a></div>`;
   document.querySelectorAll('[data-who]').forEach(b=>b.addEventListener('click',async()=>{
     state.current=b.dataset.who; await save(); renderHome(); }));
   $('#pickParent').addEventListener('click',()=>{ if(locked()) renderPinGate(()=>{unlocked=true;renderGrownup();}); else renderGrownup(); });
@@ -628,7 +630,6 @@ function renderHome(){
       {key:'teensSpeed',  ico:'🛰️',title:'Teen Speed',          desc:'10+6, 16−6, 16−10',   grad:'linear-gradient(135deg,#3d7dff,#6aa0ff)'},
       {key:'doublesChart',ico:'🐉',title:'Doubles Chart',       desc:'Same number twice',   grad:'linear-gradient(135deg,#e0552b,#ff8a3d)'},
       {key:'doublesSpeed',ico:'💥',title:'Doubles Speed',       desc:'6+6, 12−6',           grad:'linear-gradient(135deg,#d1345b,#ff6f91)'},
-      {key:'hundred',     ico:'🧮',title:'Hundred Chart Hops',  desc:'+10 down a column',   grad:'linear-gradient(135deg,#1f9b7d,#46c9a6)'},
       {key:'hopper',      ico:'🐸',title:'Ten Hopper',          desc:'+10 / −10 jumps',     grad:'linear-gradient(135deg,#3fa34d,#6ec46f)'},
       {key:'quick',       ico:'⚡',title:'Quick Tens',          desc:'10 more / 10 less',   grad:'linear-gradient(135deg,#f5a623,#ffce5c)'}
     ])}
@@ -638,6 +639,10 @@ function renderHome(){
       <button class="refcard" data-trail="placeValue">
         <span class="refico">🧱</span>
         <span><span class="reft">Place-Value Playground</span><br><span class="refd">See how tens &amp; ones build a number</span></span>
+      </button>
+      <button class="refcard" data-trail="hundred" style="margin-top:10px">
+        <span class="refico">🧮</span>
+        <span><span class="reft">Hundred Chart Hops</span><br><span class="refd">Hop +10 down a column on the hundred chart</span></span>
       </button>
     </div>`;
   document.querySelectorAll('[data-trail]').forEach(b=>b.addEventListener('click',()=>startRound(b.dataset.trail)));
@@ -745,23 +750,32 @@ function distractorsExcl(exclude,k){const out=[];const used=new Set(exclude);let
 function buildChart(mode){
   let targets=[],bank=[];
   if(mode==='chart'){
-    const all=[[0,10],[1,9],[2,8],[3,7],[4,6],[5,5]];   // ALL six friends of ten
-    targets=all.map(()=>10);
-    all.forEach(([x,y])=>bank.push(x,y));
-    for(let i=0;i<4;i++){const p=all[rnd(all.length)];bank.push(p[0],p[1]);}  // decoy pairs
+    const all=[[0,10],[1,9],[2,8],[3,7],[4,6],[5,5]];
+    // 10 bonds: all six friends of ten, then four more at random
+    let picks=shuffle(all.slice());
+    while(picks.length<10) picks.push(all[rnd(all.length)]);
+    picks=picks.slice(0,10);
+    targets=picks.map(()=>10);
+    picks.forEach(([x,y])=>bank.push(x,y));
+    for(let i=0;i<6;i++){const p=all[rnd(all.length)];bank.push(p[0],p[1]);}  // decoys
   }else if(mode==='teens'){
-    const teens=shuffle([11,12,13,14,15,16,17,18,19]).slice(0,6);  // six distinct teen numbers
+    // 10 teen numbers (9 distinct + 1 repeat)
+    let teens=shuffle([11,12,13,14,15,16,17,18,19]);
+    while(teens.length<10) teens.push(11+rnd(9));
+    teens=teens.slice(0,10);
     targets=teens;
     teens.forEach(t=>bank.push(10,t-10));
-    for(let i=0;i<4;i++){const t=11+rnd(9);bank.push(10,t-10);}    // decoy 10+ones pairs
+    for(let i=0;i<6;i++){const t=11+rnd(9);bank.push(10,t-10);}
   }else{ // doubles
-    const ns=shuffle([2,3,4,5,6,7,8,9]).slice(0,6);                // six distinct doubles
+    let ns=shuffle([2,3,4,5,6,7,8,9]);
+    while(ns.length<10) ns.push(2+rnd(8));
+    ns=ns.slice(0,10);
     targets=ns.map(n=>n*2);
     ns.forEach(n=>bank.push(n,n));
-    for(let i=0;i<4;i++){const n=2+rnd(8);bank.push(n,n);}         // decoy double pairs
+    for(let i=0;i<6;i++){const n=2+rnd(8);bank.push(n,n);}
   }
   shuffle(bank);
-  return {targets, bank};                                           // 6 bonds, 20 tiles (8 spare)
+  return {targets, bank};                                           // 10 bonds
 }
 function friendA(){return pick([1,2,3,4,4,5,6,6,7,8,9]);}  /* extra weight on 4 & 6 */
 function buildChallenge(mode){
@@ -773,8 +787,8 @@ function buildChallenge(mode){
   return {mode,type:'fixed',form,a,ans,tray,hint:`What is ${a}'s friend to make 10?`};
 }
 function buildRound(mode){const out=[],seen=new Set();let g=0;
-  while(out.length<6&&g<80){g++;const c=buildChallenge(mode);const key=JSON.stringify([c.given,c.a,c.form,c.tray]);if(seen.has(key))continue;seen.add(key);out.push(c);}
-  while(out.length<6)out.push(buildChallenge(mode));return out;}
+  while(out.length<10&&g<140){g++;const c=buildChallenge(mode);const key=JSON.stringify([c.given,c.a,c.form,c.tray]);if(seen.has(key))continue;seen.add(key);out.push(c);}
+  while(out.length<10)out.push(buildChallenge(mode));return out;}
 
 /* ============================================================ ROUND ============================================================ */
 let round=null, busy=false;
@@ -787,12 +801,12 @@ function startRound(mode){
   if(M.kind==='explore'){round={mode,M,who,correct:0,wrong:0,pv:{value:23,tab:'build',caption:'',pulse:null,pick:null},render:renderExplore};renderExplore();return;}
   if(M.kind==='chart'){const b=buildChart(M.chartType);
     round={mode,M,who,correct:0,wrong:0,chartType:M.chartType,total:b.targets.length,index:0,targets:b.targets,bank:b.bank,render:renderChart};renderChart();return;}
-  if(M.kind==='slotgame'){round={mode,M,who,correct:0,wrong:0,total:6,index:0,challenges:buildRound(mode),render:renderRound};renderRound();return;}
+  if(M.kind==='slotgame'){round={mode,M,who,correct:0,wrong:0,total:10,index:0,challenges:buildRound(mode),render:renderRound};renderRound();return;}
   if(M.kind==='numpad'){const prob=mode==='teensSpeed'?buildTeensSpeed():mode==='doublesSpeed'?buildDoublesSpeed():buildQuickTens();
-    round={mode,M,who,correct:0,wrong:0,total:6,index:0,problems:prob,input:'',render:renderNumpad};renderNumpad();return;}
-  if(M.kind==='hopper'){round={mode,M,who,correct:0,wrong:0,total:6,index:0,hops:buildHops(),render:renderHopper};renderHopper();return;}
+    round={mode,M,who,correct:0,wrong:0,total:10,index:0,problems:prob,input:'',render:renderNumpad};renderNumpad();return;}
+  if(M.kind==='hopper'){round={mode,M,who,correct:0,wrong:0,total:10,index:0,hops:buildHops(),render:renderHopper};renderHopper();return;}
   if(M.kind==='hundred'){const dir=Math.random()<0.65?10:-10;const start=dir>0?(11+rnd(39)):(61+rnd(38));
-    round={mode,M,who,correct:0,wrong:0,total:5,index:0,cur:start,dir,startNum:start,render:renderHundred};renderHundred();return;}
+    round={mode,M,who,correct:0,wrong:0,total:10,index:0,cur:start,dir,startNum:start,render:renderHundred};renderHundred();return;}
 }
 function pathHTML(){let s='';for(let i=0;i<round.total;i++){let cls='stone';if(i<round.index)cls+=' done';if(i===round.index)cls+=' cur';s+=`<div class="${cls}">${i<round.index?'⭐':''}</div>`;}
   return `<div class="path" id="path"><div class="token" id="token">${P().avatar}</div>${s}</div>`;}
@@ -1014,27 +1028,27 @@ const ONES_TINT=['#ffe3ec','#fff0d6','#fffbd1','#e6f9df','#dcf5f0','#ddefff','#e
 
 /* ---- generators ---- */
 function buildTeensSpeed(){const out=[],used=new Set();let g=0;
-  while(out.length<6&&g<80){g++;const d=1+rnd(9);const form=pick(['add','subd','sub10']);
+  while(out.length<10&&g<140){g++;const d=1+rnd(9);const form=pick(['add','subd','sub10']);
     let parts,answer,hint;
     if(form==='add'){parts=[10,'+',d,'=','▢'];answer=10+d;hint='Ten and '+d+' more makes a teen number!';}
     else if(form==='subd'){parts=[10+d,'−',d,'=','▢'];answer=10;hint='Take the ones away and you land back on 10!';}
     else{parts=[10+d,'−',10,'=','▢'];answer=d;hint='Take the ten away — the ones are what is left!';}
     const key=parts.join('');if(used.has(key))continue;used.add(key);out.push({parts,answer,hint});}
-  while(out.length<6){const d=1+rnd(9);out.push({parts:[10,'+',d,'=','▢'],answer:10+d,hint:'Ten and some more!'});}
+  while(out.length<10){const d=1+rnd(9);out.push({parts:[10,'+',d,'=','▢'],answer:10+d,hint:'Ten and some more!'});}
   return out;}
 function buildDoublesSpeed(){const out=[],used=new Set();let g=0;
-  while(out.length<6&&g<80){g++;const n=2+rnd(8);const sub=Math.random()<0.4;
+  while(out.length<10&&g<140){g++;const n=2+rnd(8);const sub=Math.random()<0.4;
     const parts=sub?[2*n,'−',n,'=','▢']:[n,'+',n,'=','▢'];const answer=sub?n:2*n;
     const key=parts.join('');if(used.has(key))continue;used.add(key);
     out.push({parts,answer,hint:sub?`Half of ${2*n} is ${n}.`:`Double ${n} — count ${n} and ${n} more!`});}
-  while(out.length<6){const n=2+rnd(8);out.push({parts:[n,'+',n,'=','▢'],answer:2*n,hint:'Double it!'});}
+  while(out.length<10){const n=2+rnd(8);out.push({parts:[n,'+',n,'=','▢'],answer:2*n,hint:'Double it!'});}
   return out;}
 function buildQuickTens(){const out=[];
-  for(let i=0;i<6;i++){const more=Math.random()<0.5;const n=more?(3+rnd(86)):(13+rnd(86));
+  for(let i=0;i<10;i++){const more=Math.random()<0.5;const n=more?(3+rnd(86)):(13+rnd(86));
     out.push({prompt:`What is <span class="big">10 ${more?'MORE':'LESS'}</span> than <span class="big">${n}</span>?`,answer:more?n+10:n-10,n,hint:`Only the tens digit changes — the ones digit of ${n} stays a ${n%10}!`});}
   return out;}
 function buildHops(){const out=[];
-  for(let i=0;i<6;i++){const dir=Math.random()<0.6?10:-10;const start=dir>0?(5+rnd(70)):(25+rnd(70));const ans=start+dir;
+  for(let i=0;i<10;i++){const dir=Math.random()<0.6?10:-10;const start=dir>0?(5+rnd(70)):(25+rnd(70));const ans=start+dir;
     const wrongs=shuffle([ans+1,ans-1,ans+10,ans-10,start-dir].filter(v=>v!==ans&&v>0&&v<=110)).slice(0,2);
     out.push({start,dir,ans,options:shuffle([ans,...wrongs])});}
   return out;}

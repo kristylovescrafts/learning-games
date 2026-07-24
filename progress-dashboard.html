@@ -69,6 +69,16 @@
   .trendhead .down{color:var(--low);font-weight:800;font-size:.82rem;background:var(--low-bg);padding:3px 9px;border-radius:999px}
   .trendhead .flat{color:var(--soft);font-weight:800;font-size:.82rem;background:#f1eef9;padding:3px 9px;border-radius:999px}
   .spark{margin:2px 0}
+  .chart{position:relative;width:100%}
+  .chart .cline{position:absolute;inset:0;width:100%;height:100%}
+  .chart .cdot{position:absolute;width:8px;height:8px;border-radius:50%;background:#7c5cff;transform:translate(-50%,-50%)}
+  .chart .clab{position:absolute;font-weight:800;font-size:.82rem;color:#a99fc4}
+  .chart .clab.lstart{left:2px;top:2px}
+  .chart .clab.lend{right:2px;top:2px;color:#7c5cff}
+  .chart .clab.l80{right:2px;font-size:.62rem;color:#8fd6b0}
+
+  
+
   .nodata{color:var(--soft);font-weight:700;font-size:.82rem;padding:8px 0}
   .log{margin-top:8px}
   .log summary{font-family:var(--disp);font-weight:600;color:var(--soft);cursor:pointer;font-size:.88rem}
@@ -270,29 +280,36 @@ function trendBlock(app,key,hist){
   </div>`;
 }
 
-/* ---- tiny inline SVG sparkline of accuracy % ---- */
+/* ---- accuracy-over-time chart: full-width line, HTML labels overlaid ---- */
 function sparkline(vals){
   if(!vals.length) return '<div class="nodata">Not enough days yet to chart</div>';
-  const W=300,H=120,padX=10,padT=26,padB=16;
-  const yFor=v=>padT+(1-v/100)*(H-padT-padB);
-  if(vals.length===1){ const y=yFor(vals[0]);
-    return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet"><circle cx="${W/2}" cy="${y}" r="5" fill="#7c5cff"/><text x="${W/2}" y="${y-10}" text-anchor="middle" font-size="13" font-weight="800" fill="#6a5f86">${vals[0]}%</text></svg>`; }
-  const n=vals.length, dx=(W-2*padX)/(n-1);
-  const pt=(v,i)=>[padX+i*dx, yFor(v)];
-  const line=vals.map((v,i)=>{const[x,y]=pt(v,i);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');
-  const dots=vals.map((v,i)=>{const[x,y]=pt(v,i);return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="#7c5cff"/>`;}).join('');
-  const area=`M${padX} ${H-padB} `+vals.map((v,i)=>{const[x,y]=pt(v,i);return 'L'+x.toFixed(1)+' '+y.toFixed(1);}).join(' ')+` L${(W-padX).toFixed(1)} ${H-padB} Z`;
-  // light gridlines at 50% and 80%
-  const g50=yFor(50), g80=yFor(80);
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet">
-    <line x1="${padX}" y1="${g50}" x2="${W-padX}" y2="${g50}" stroke="#f0ecfa" stroke-width="1"/>
-    <line x1="${padX}" y1="${g80}" x2="${W-padX}" y2="${g80}" stroke="#e3f7ec" stroke-width="1"/>
-    <text x="${W-padX}" y="${g80-3}" text-anchor="end" font-size="9" font-weight="800" fill="#8fd6b0">80%</text>
-    <path d="${area}" fill="#efeaff"/>
-    <path d="${line}" fill="none" stroke="#7c5cff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${dots}
-    <text x="${padX}" y="16" font-size="13" font-weight="800" fill="#a99fc4">${vals[0]}%</text>
-    <text x="${W-padX}" y="16" text-anchor="end" font-size="13" font-weight="800" fill="#7c5cff">${vals[vals.length-1]}%</text>
-  </svg>`;
+  const H=130,padT=26,padB=16;
+  const yPct=v=>((padT+(1-v/100)*(H-padT-padB))/H*100);
+  const first=vals[0], last=vals[vals.length-1];
+  if(vals.length===1){
+    return `<div class="chart" style="height:${H}px">
+      <div class="cdot" style="left:50%;top:${yPct(vals[0])}%"></div>
+      <div class="clab" style="left:50%;top:calc(${yPct(vals[0])}% - 20px);transform:translateX(-50%)">${vals[0]}%</div></div>`;
+  }
+  const n=vals.length;
+  const xPct=i=>(i/(n-1))*100;
+  // SVG path in a 0..100 x 0..100 box, stretched to fill
+  const pts=vals.map((v,i)=>[xPct(i), (padT+(1-v/100)*(H-padT-padB))/H*100]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(2)+' '+p[1].toFixed(2)).join(' ');
+  const area=`M0 100 `+pts.map(p=>'L'+p[0].toFixed(2)+' '+p[1].toFixed(2)).join(' ')+' L100 100 Z';
+  const g80=(padT+(1-80/100)*(H-padT-padB))/H*100;
+  const dots=pts.map(p=>`<div class="cdot" style="left:${p[0]}%;top:${p[1]}%"></div>`).join('');
+  return `<div class="chart" style="height:${H}px">
+    <svg class="cline" viewBox="0 0 100 100" preserveAspectRatio="none" width="100%" height="100%">
+      <line x1="0" y1="${g80.toFixed(2)}" x2="100" y2="${g80.toFixed(2)}" stroke="#e3f7ec" stroke-width="0.5" vector-effect="non-scaling-stroke"/>
+      <path d="${area}" fill="#efeaff"/>
+      <path d="${line}" fill="none" stroke="#7c5cff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    </svg>
+    ${dots}
+    <div class="clab lstart">${first}%</div>
+    <div class="clab lend">${last}%</div>
+    <div class="clab l80" style="top:calc(${g80.toFixed(2)}% - 14px)">80%</div>
+  </div>`;
 }
 function wireLogs(){ /* <details> handles open/close natively */ }
 

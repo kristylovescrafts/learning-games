@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kids' Progress</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#2b2140;--soft:#6a5f86;--bg:#f4f2fb;--card:#fff;--line:#ece7f6;
+    --good:#22b36b;--good-bg:#e3f7ec;--mid:#f2a431;--mid-bg:#fdf1dc;--low:#e8503b;--low-bg:#fde5e1;--none:#c9c2dd;
+    --disp:'Fredoka',system-ui,sans-serif;--body:'Nunito',system-ui,sans-serif}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:var(--body);color:var(--ink);background:var(--bg);
+    background-image:radial-gradient(circle at 100% 0,#efeaff 0,transparent 40%);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+  h1,h2,h3{font-family:var(--disp);margin:0;line-height:1.15}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .top h1{font-size:1.7rem}
+  .top h1 .q{color:#7c5cff}
+  .updated{font-weight:800;color:var(--soft);font-size:.85rem}
+  .sub{font-weight:800;color:var(--soft);font-size:.9rem;margin-bottom:16px}
+  button{font-family:var(--disp);cursor:pointer;border:none}
+  .btn{background:#7c5cff;color:#fff;border-radius:14px;font-weight:600;font-size:.95rem;padding:10px 16px;box-shadow:0 4px 0 #5f45cc}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #5f45cc}
+  .btn.ghost{background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--line)}
+  .btn.ghost:active{box-shadow:0 1px 0 var(--line)}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .kidcard{background:var(--card);border-radius:22px;box-shadow:0 4px 0 var(--line),0 12px 30px rgba(43,33,64,.06);padding:18px;margin-bottom:18px}
+  .kidhead{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  .kidhead .ava{font-size:2.4rem;line-height:1}
+  .kidhead .nm{font-family:var(--disp);font-weight:700;font-size:1.4rem}
+  .kidhead .meta{font-weight:800;color:var(--soft);font-size:.82rem}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px}
+  .chip{font-weight:800;font-size:.8rem;padding:4px 10px;border-radius:999px;background:#f3f0fb;color:var(--soft)}
+  .chip b{color:var(--ink)}
+  .group{font-family:var(--disp);font-weight:700;color:var(--soft);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;margin:16px 0 6px}
+  .lv{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+  .lv:first-of-type{border-top:none}
+  .lv .ico{font-size:1.5rem;width:30px;text-align:center;flex:none}
+  .lv .body{flex:1;min-width:0}
+  .lv .nm{font-family:var(--disp);font-weight:600;font-size:1.02rem}
+  .lv .det{font-weight:800;color:var(--soft);font-size:.8rem;margin-top:1px}
+  .lv .miss{font-weight:800;color:var(--low);font-size:.78rem;margin-top:2px}
+  .lv .miss span{background:var(--low-bg);border-radius:6px;padding:0 5px;margin-right:4px;display:inline-block}
+  .lv.explore .nm{color:var(--soft)}
+  .badge{flex:none;font-weight:900;font-size:.82rem;padding:5px 11px;border-radius:999px;text-align:center;min-width:66px}
+  .badge.good{background:var(--good-bg);color:var(--good)}
+  .badge.mid{background:var(--mid-bg);color:#a86f00}
+  .badge.low{background:var(--low-bg);color:var(--low)}
+  .badge.none{background:#f1eef9;color:var(--none)}
+  .badge.expl{background:#eafaf4;color:#12967f}
+  .bar{height:7px;border-radius:6px;background:var(--line);overflow:hidden;margin-top:5px}
+  .bar>i{display:block;height:100%;border-radius:6px}
+  .empty{font-weight:800;color:var(--soft);text-align:center;padding:8px 0}
+  .not-tried-note{font-weight:800;color:var(--soft);font-size:.82rem;margin-top:12px;background:#f7f5fd;border-radius:12px;padding:9px 12px}
+  .sessions{margin-top:12px}
+  .sessions summary{font-family:var(--disp);font-weight:600;color:var(--soft);cursor:pointer;font-size:.9rem}
+  .srow{font-weight:800;color:var(--soft);font-size:.8rem;padding:4px 0 4px 6px}
+  .banner{background:#fff;border-radius:16px;box-shadow:0 4px 0 var(--line);padding:14px 16px;margin-bottom:16px;font-weight:800;color:var(--soft);font-size:.9rem;line-height:1.5}
+  .banner b{color:var(--ink)}
+  .apptag{display:inline-flex;align-items:center;gap:6px;background:#efeaff;color:#5f45cc;font-family:var(--disp);font-weight:700;
+    font-size:.9rem;padding:5px 12px;border-radius:999px;margin:22px 0 10px}
+  .device-tag{font-weight:800;color:var(--soft);font-size:.78rem}
+  input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Kids' <span class="q">Progress</span></h1>
+    <div class="updated" id="updated"></div>
+  </div>
+  <div class="sub" id="sub">Loading…</div>
+  <div class="toolbar">
+    <button class="btn" id="refresh">↻ Refresh</button>
+    <button class="btn ghost" id="loadBtn">📂 Load a progress file</button>
+    <button class="btn ghost" id="demoBtn">👁 See a sample</button>
+    <input type="file" id="file" accept="application/json,.json">
+  </div>
+  <div id="content"></div>
+</div>
+<script>
+/* ---------- level metadata for each app ---------- */
+const META={
+  twinWordQuest:{ title:"📖 Twin Word Quest", order:[
+    ["forest","🌲","Word Forest","Reading"],
+    ["city","🔍","Word Detective City","Reading"],
+    ["beach","🏖️","Sentence Builder Beach","Reading"],
+    ["mountain","⛰️","Missing Letter Mountain","Spelling"],
+    ["station","🚀","Spell It Space Station","Spelling"],
+    ["castle","🏰","Final Word Castle","Everything"]
+  ]},
+  mathQuest:{ title:"🔢 Math Quest", order:[
+    ["friendsChart","🔟","Friends of Ten Chart","Friends of Ten"],
+    ["pairs","🌈","Rainbow Pairs","Friends of Ten"],
+    ["triangle","🔺","Number Triangle","Friends of Ten"],
+    ["equation","🟰","Build the Equation","Friends of Ten"],
+    ["teensChart","🚀","Teen Numbers Chart","Teen Numbers"],
+    ["teensSpeed","🛰️","Teen Speed","Teen Numbers"],
+    ["doublesChart","🐉","Doubles Chart","Doubles"],
+    ["doublesSpeed","💥","Doubles Speed","Doubles"],
+    ["hundred","🧮","Hundred Chart Hops","Counting by Tens"],
+    ["hopper","🐸","Ten Hopper","Counting by Tens"],
+    ["quick","⚡","Quick Tens","Counting by Tens"],
+    ["placeValue","🧱","Place-Value Playground","Explore (no score)"]
+  ]}
+};
+const $=s=>document.querySelector(s);
+const fmtDate=iso=>{ try{return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'});}catch(e){return'';} };
+const fmtWhen=iso=>{ try{return new Date(iso).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}catch(e){return'';} };
+
+function band(pct){ return pct>=80?['good','Solid']:pct>=50?['mid','Getting it']:['low','Focus here']; }
+
+function levelRow(m,L){
+  const [id,ico,name,group]=m;
+  if(id==='placeValue'){
+    const n=L&&L.plays?L.plays:0;
+    return `<div class="lv explore"><div class="ico">${ico}</div><div class="body">
+      <div class="nm">${name}</div><div class="det">${n?`explored ${n} time${n===1?'':'s'} — it's a sandbox, no score`:'not tried yet'}</div></div>
+      <div class="badge expl">${n?'explored':'—'}</div></div>`;
+  }
+  if(!L||!L.total){
+    return `<div class="lv"><div class="ico">${ico}</div><div class="body">
+      <div class="nm">${name}</div><div class="det">not tried yet</div></div>
+      <div class="badge none">—</div></div>`;
+  }
+  const correct=L.correct||0, total=L.total||0, wrong=(L.wrong!=null?L.wrong:total-correct);
+  const pct=Math.round(correct/total*100); const [cls,lbl]=band(pct);
+  const barc=cls==='good'?'var(--good)':cls==='mid'?'var(--mid)':'var(--low)';
+  const miss=Object.keys(L.missed||{}).map(k=>({k,n:L.missed[k]})).sort((a,b)=>b.n-a.n).slice(0,6);
+  return `<div class="lv"><div class="ico">${ico}</div><div class="body">
+      <div class="nm">${name}</div>
+      <div class="det">played ${L.plays||1}× · ${correct} right, ${wrong} wrong${L.last?` · last ${fmtDate(L.last)}`:''}</div>
+      <div class="bar"><i style="width:${pct}%;background:${barc}"></i></div>
+      ${miss.length?`<div class="miss">missed: ${miss.map(x=>`<span>${x.k}${x.n>1?` ${x.n}×`:''}</span>`).join('')}</div>`:''}
+    </div>
+    <div class="badge ${cls}">${pct}%</div></div>`;
+}
+
+function kidCard(app,player){
+  const meta=META[app]; if(!meta) return '';
+  const levels=player.levels||{};
+  let rows='', group='';
+  meta.order.forEach(m=>{
+    if(m[3]!==group){ group=m[3]; rows+=`<div class="group">${group}</div>`; }
+    rows+=levelRow(m, levels[m[0]]);
+  });
+  const tried=meta.order.filter(m=>m[0]!=='placeValue' && levels[m[0]] && levels[m[0]].total);
+  const notTried=meta.order.filter(m=>m[0]!=='placeValue' && (!levels[m[0]]||!levels[m[0]].total)).map(m=>m[2]);
+  // hardest / strongest
+  let extra='';
+  const solid=tried.filter(m=>levels[m[0]].total>=5).map(m=>({name:m[2],ico:m[1],pct:Math.round(levels[m[0]].correct/levels[m[0]].total*100)}));
+  if(solid.length){
+    const hard=solid.slice().sort((a,b)=>a.pct-b.pct)[0], easy=solid.slice().sort((a,b)=>b.pct-a.pct)[0];
+    extra=`<div class="chips"><span class="chip">💪 strongest: <b>${easy.ico} ${easy.name}</b></span>`+
+      (hard.name!==easy.name?`<span class="chip">🎯 hardest: <b>${hard.ico} ${hard.name}</b></span>`:'')+`</div>`;
+  }
+  const log=(player.log||[]).slice(-10).reverse();
+  const sessions=log.length?`<details class="sessions"><summary>Recent sessions (${log.length})</summary>${
+    log.map(e=>{const mm=meta.order.find(x=>x[0]===e.modeId||x[0]===e.mode); const nm=mm?`${mm[1]} ${mm[2]}`:(e.mode||e.modeId||'');
+      return `<div class="srow">${fmtWhen(e.at)} — ${nm}${e.explored?' · explored':(e.correct!=null?` · ${e.correct} right${e.wrong!=null?`, ${e.wrong} wrong`:''}`:'')}</div>`;}).join('')
+  }</details>`:'';
+  return `<div class="kidcard">
+    <div class="kidhead"><div class="ava">${player.avatar||'🙂'}</div>
+      <div><div class="nm">${player.name||'Player'}</div>
+        <div class="meta">💎 ${player.gems||0} gems${tried.length?` · ${tried.length} level${tried.length===1?'':'s'} played`:''}</div></div></div>
+    ${extra}
+    ${rows}
+    ${notTried.length?`<div class="not-tried-note">🚧 Hasn't tried yet: ${notTried.join(', ')}</div>`:''}
+    ${sessions}
+  </div>`;
+}
+
+function render(snapshots){
+  const box=$('#content');
+  if(!snapshots||!snapshots.length){ box.innerHTML=`<div class="empty">No progress yet. Once the kids play and their tablet syncs, it shows up here.</div>`; $('#sub').textContent=''; return; }
+  // newest snapshot per (app + device)
+  const seen={}; const keep=[];
+  snapshots.sort((a,b)=>String(b.saved).localeCompare(String(a.saved)));
+  snapshots.forEach(s=>{ const key=(s.app||'')+'|'+(s.device||''); if(seen[key])return; seen[key]=1; keep.push(s); });
+  // group by app
+  const byApp={};
+  keep.forEach(s=>{ (byApp[s.app]=byApp[s.app]||[]).push(s); });
+  let html='';
+  Object.keys(byApp).forEach(app=>{
+    const meta=META[app]; html+=`<div class="apptag">${meta?meta.title:app}</div>`;
+    byApp[app].forEach(s=>{
+      if(s.device) html+=`<div class="device-tag">from ${s.device} · updated ${fmtWhen(s.saved)}</div>`;
+      ['thomas','tori'].forEach(k=>{ if(s.players&&s.players[k]) html+=kidCard(app,s.players[k]); });
+    });
+  });
+  box.innerHTML=html;
+  const newest=keep.map(s=>s.saved).sort().slice(-1)[0];
+  $('#updated').textContent=newest?`Updated ${fmtWhen(newest)}`:'';
+  $('#sub').textContent=`Showing ${keep.length} snapshot${keep.length===1?'':'s'}.`;
+}
+
+/* ---------- data sources ---------- */
+async function pull(){
+  $('#sub').textContent='Checking for new results…';
+  try{
+    const res=await fetch('/.netlify/functions/get-progress',{headers:{'accept':'application/json'}});
+    if(!res.ok) throw 0;
+    const data=await res.json();
+    const snaps=(data.snapshots||data||[]).filter(Boolean);
+    if(snaps.length){ render(snaps); return; }
+    $('#sub').innerHTML='No results have arrived yet. They appear here after the kids play and close the app.';
+  }catch(e){
+    $('#sub').innerHTML='Automatic sync isn\'t connected yet (that\'s the one-time Netlify step). You can still tap <b>Load a progress file</b> or <b>See a sample</b> below.';
+    $('#content').innerHTML='';
+  }
+}
+function loadFile(file){
+  const fr=new FileReader();
+  fr.onload=()=>{ try{ const d=JSON.parse(fr.result);
+    const snaps = Array.isArray(d)?d : (d.snapshots?d.snapshots : [d]);
+    render(snaps); $('#sub').textContent='Loaded from file.';
+  }catch(e){ $('#sub').textContent='That file could not be read.'; } };
+  fr.readAsText(file);
+}
+
+/* ---------- demo ---------- */
+function demo(){
+  const now=Date.now(), day=864e5;
+  render([{app:'twinWordQuest',device:"Thomas's iPad",saved:new Date(now).toISOString(),players:{
+    thomas:{name:'Thomas',avatar:'🦊',gems:127,levels:{
+      forest:{plays:6,correct:32,total:36,missed:{said:2,or:1},last:new Date(now-day).toISOString()},
+      city:{plays:2,correct:9,total:12,missed:{their:1},last:new Date(now-2*day).toISOString()},
+      mountain:{plays:2,correct:7,total:12,missed:{was:2,for:1},last:new Date(now-day).toISOString()},
+      station:{plays:3,correct:14,total:36,missed:{was:4,his:3,and:2},last:new Date(now).toISOString()}
+    },log:[
+      {at:new Date(now).toISOString(),modeId:'station',correct:5,wrong:7},
+      {at:new Date(now-day).toISOString(),modeId:'forest',correct:6,wrong:0}
+    ]},
+    tori:{name:'Tori',avatar:'🦄',gems:182,levels:{
+      forest:{plays:8,correct:44,total:48,missed:{he:1},last:new Date(now).toISOString()},
+      mountain:{plays:4,correct:20,total:24,missed:{not:2},last:new Date(now-day).toISOString()},
+      station:{plays:5,correct:28,total:60,missed:{would:3,could:2},last:new Date(now).toISOString()},
+      city:{plays:3,correct:16,total:18,last:new Date(now-2*day).toISOString()}
+    },log:[{at:new Date(now).toISOString(),modeId:'station',correct:6,wrong:6}]}
+  }}]);
+  $('#updated').textContent='Sample data';
+  $('#sub').textContent='This is a sample so you can see the layout.';
+}
+
+$('#refresh').onclick=pull;
+$('#loadBtn').onclick=()=>$('#file').click();
+$('#file').onchange=e=>{ if(e.target.files&&e.target.files[0]) loadFile(e.target.files[0]); };
+$('#demoBtn').onclick=demo;
+pull();
+</script>
+</body>
+</html>

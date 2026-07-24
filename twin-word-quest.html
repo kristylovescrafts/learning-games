@@ -196,6 +196,13 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--primary);o
 .abtn.lg{font-size:1.05rem;padding:14px 22px;background:linear-gradient(160deg,#fff,#EEF1FF)}
 .abtn.mine{box-shadow:0 4px 0 #C9B6F0;background:linear-gradient(160deg,#fff,#F3ECFF)}
 .bigword{font-family:'Baloo 2';font-weight:800;font-size:3.3rem;letter-spacing:1px;margin:8px 0}
+  .prevbtns{display:flex;flex-direction:column;gap:12px;max-width:340px;margin:18px auto 0}
+  .prevbtns .btn{font-size:1.1rem;padding:14px}
+  .btn.tip{background:#FFF3D6;color:#9A6B00;box-shadow:0 5px 0 #F0DFB0}
+  .btn.tip:active{box-shadow:0 1px 0 #F0DFB0}
+  .node.preview .stone{background:linear-gradient(135deg,#00c2c2,#00a6a6)}
+  .prevcard{position:relative}
+
 .sentence-ctx{font-size:1rem;color:var(--ink-soft);font-weight:800;margin-bottom:6px}
 
 .choices{display:grid;gap:12px;margin-top:auto}
@@ -417,6 +424,7 @@ const CURATED_MISSPELL = {
 };
 
 const MODES = [
+  {id:"preview",  name:"Meet the Words",         emoji:"👀", lv:"#00A6A6", dk:"#00807f", skill:"preview", prompt:"See and hear each word",   blurb:"Warm up — no pressure"},
   {id:"forest",   name:"Word Forest",            emoji:"🌲", lv:"#34A35F", dk:"#247a44", skill:"read",  prompt:"Tap the word you hear",     blurb:"Hear it, find it"},
   {id:"mountain", name:"Missing Letter Mountain",emoji:"⛰️", lv:"#7C8AA0", dk:"#5b6678", skill:"spell", prompt:"Fill in the missing letter",blurb:"Finish the word"},
   {id:"station",  name:"Spell It Space Station", emoji:"🚀", lv:"#5B6CF0", dk:"#3E4CC9", skill:"spell", prompt:"Spell the word",            blurb:"Build it letter by letter"},
@@ -873,7 +881,7 @@ function importClips(file){
     if(!data || data.app!=="twinWordQuest" || !data.clips){ bkNote("That doesn't look like a Word Quest voice backup.",true); return; }
     let added=0, skipped=0;
     for(const k in data.clips){
-      const ok=(typeof k==="string") && (k.indexOf("w:")===0 || k.indexOf("s:")===0);
+      const ok=(typeof k==="string") && (k.indexOf("w:")===0 || k.indexOf("s:")===0 || k.indexOf("t:")===0);
       const b=ok ? dataURLToBlob(data.clips[k]) : null;
       if(!b){ skipped++; continue; }
       try{ await putClip(k,b); added++; }catch(e){ skipped++; }
@@ -1009,6 +1017,7 @@ function render(){
     case "pick": return renderPick();
     case "home": return renderHome();
     case "mission": return renderMission();
+    case "preview": return renderPreview();
     case "reward": return renderReward();
     case "parent": return locked() ? renderPinGate(()=>{ unlocked=true; render(); }) : renderParent();
     case "record": return locked() ? renderPinGate(()=>{ unlocked=true; render(); }) : renderRecord();
@@ -1396,16 +1405,18 @@ function renderHome(){
   const trail=$("#trail");
   let firstIncomplete = -1;
   MODES.forEach((m,i)=>{
+    if(m.skill==="preview") return;
     const done=isLevelDone(p,state.selectedSet,m);
     const locked = m.id==="castle" && prog.pct<50;
     if(firstIncomplete<0 && !done && !locked) firstIncomplete=i;
   });
   if(firstIncomplete<0) firstIncomplete=0;
   MODES.forEach((m,i)=>{
-    const done=isLevelDone(p,state.selectedSet,m);
+    const isPrev=m.skill==="preview";
+    const done=isPrev?false:isLevelDone(p,state.selectedSet,m);
     const locked = m.id==="castle" && prog.pct<50;
     const node=document.createElement('div');
-    node.className="node "+(i%2?"right":"left")+(done?" done":"")+(locked?" locked":"")+(m.id==="castle"?" castle":"");
+    node.className="node "+(i%2?"right":"left")+(done?" done":"")+(locked?" locked":"")+(m.id==="castle"?" castle":"")+(isPrev?" preview":"");
     node.style.animationDelay=(i*0.06)+"s";
     node.innerHTML=`
       <button class="stone" ${locked?'aria-disabled="true"':''} aria-label="${m.name}">
@@ -1416,7 +1427,8 @@ function renderHome(){
       ${i===firstIncomplete?`<span class="walker">${p.ava}</span>`:''}`;
     node.style.setProperty('--lv',m.lv); node.style.setProperty('--lv-dk',m.dk);
     const stone=node.querySelector('.stone');
-    if(!locked) stone.onclick=()=>startMission(m.id);
+    if(isPrev) stone.onclick=()=>go("preview",{setIdx:state.selectedSet,pos:0});
+    else if(!locked) stone.onclick=()=>startMission(m.id);
     trail.appendChild(node);
   });
 
@@ -1635,6 +1647,51 @@ function buildQueue(mode,set,count){
     if(sub.id==="city"&&w.length<2) sub=MODES.find(m=>m.id==="forest");
     if((sub.id==="mountain"||sub.id==="station")&&w.length<2) sub=MODES.find(m=>m.id==="forest");
     return {word:w,mode:sub}; });
+}
+
+/* ============================ WORD PREVIEW (flashcards) ============================ */
+async function sayTip(w){
+  const clip = await getClip("t:"+w.toLowerCase());
+  if(clip){ if(hasAudio) speechSynthesis.cancel(); playBlob(clip); return true; }
+  return false;
+}
+async function hasTip(w){ 
+  if(hasBaked("t:"+w.toLowerCase())) return true;
+  try{ const c=await getClip("t:"+w.toLowerCase()); return !!c; }catch(e){ return false; }
+}
+async function renderPreview(){
+  const s=WORD_SETS[view.setIdx]; const words=s.words; const total=words.length;
+  const pos=Math.max(0,Math.min(view.pos||0, total-1));
+  const w=words[pos];
+  const tipThere = await hasTip(w);
+  app.innerHTML = topbar() + `
+    <div class="mhead">
+      <button class="iconbtn" id="leavePrev" title="Back to map">←</button>
+      <div class="title">👀 Meet the Words<small>${s.emoji} Week ${s.wk} · ${pos+1} of ${total}</small></div>
+    </div>
+    <div class="steptrack"><div class="rail"><i style="width:${(pos+1)/total*100}%"></i></div></div>
+    <div class="card prevcard" style="text-align:center;padding:28px 18px">
+      <div class="bigword" style="font-size:3.6rem">${w}</div>
+      <div class="prevbtns">
+        <button class="btn" id="pWord">🔊 Hear the word</button>
+        <button class="btn soft" id="pSent">💬 Hear it in a sentence</button>
+        ${tipThere?'<button class="btn tip" id="pTip">💡 Spelling tip</button>':''}
+      </div>
+      <div class="sentence-ctx" id="pSentText" style="margin-top:14px;min-height:1.4em">“${SENTENCES[w]||""}”</div>
+    </div>
+    <div class="action-row" style="margin-top:16px">
+      <button class="btn soft" id="pPrev" ${pos===0?'disabled style="opacity:.5"':''}>← Back</button>
+      <button class="btn" id="pNext">${pos===total-1?'All done ✓':'Next →'}</button>
+    </div>`;
+  wireTop();
+  $("#leavePrev").onclick=()=>go("home");
+  $("#pWord").onclick=()=>sayWord(w);
+  $("#pSent").onclick=()=>saySentence(w);
+  const tb=$("#pTip"); if(tb) tb.onclick=()=>sayTip(w);
+  $("#pPrev").onclick=()=>{ if(pos>0){ view.pos=pos-1; render(); } };
+  $("#pNext").onclick=()=>{ if(pos>=total-1){ go("home"); } else { view.pos=pos+1; render(); } };
+  // auto-play the word on arrival (gentle)
+  setTimeout(()=>sayWord(w), 250);
 }
 
 function renderMission(){
@@ -2073,18 +2130,20 @@ async function renderVoices(){
     const head=document.createElement('div'); head.style.cssText="font-family:Baloo 2;font-weight:700;margin:12px 0 2px;color:var(--ink-soft)";
     head.textContent=`${s.emoji} Week ${s.wk} · ${s.name}`; vlist.appendChild(head);
     s.words.forEach(w=>{
-      const wk="w:"+w.toLowerCase(), sk="s:"+w.toLowerCase();
-      const hasW=recKeys.has(wk), hasS=recKeys.has(sk);
-      const bakedW=!hasW&&hasBaked(wk), bakedS=!hasS&&hasBaked(sk);
+      const wk="w:"+w.toLowerCase(), sk="s:"+w.toLowerCase(), tk="t:"+w.toLowerCase();
+      const hasW=recKeys.has(wk), hasS=recKeys.has(sk), hasT=recKeys.has(tk);
+      const bakedW=!hasW&&hasBaked(wk), bakedS=!hasS&&hasBaked(sk), bakedT=!hasT&&hasBaked(tk);
       const row=document.createElement('div'); row.className="vrow";
       row.innerHTML=`<span class="vw">${w}</span>
-        ${hasW?'<span class="vbadge">🔤</span>':(bakedW?'<span class="vbadge" title="built in">🎧</span>':'')}${hasS?'<span class="vbadge">💬</span>':(bakedS?'<span class="vbadge" title="built in">🎧</span>':'')}
+        ${hasW?'<span class="vbadge">🔤</span>':(bakedW?'<span class="vbadge" title="built in">🎧</span>':'')}${hasS?'<span class="vbadge">💬</span>':(bakedS?'<span class="vbadge" title="built in">🎧</span>':'')}${hasT?'<span class="vbadge" title="spelling tip">💡</span>':(bakedT?'<span class="vbadge" title="built-in tip">🎧</span>':'')}
         <button class="recbtn play" title="Play word">▶︎</button>
         <button class="recbtn rec" title="Record word">${hasW?'↻':'●'}</button>
-        ${(hasW||hasS)?'<button class="recbtn del" title="Delete">🗑️</button>':''}`;
-      row.querySelector('.play').onclick=()=>sayWord(w);
+        <button class="recbtn rectip" title="Record spelling tip" style="background:#FFF3D6">${hasT?'↻💡':'💡'}</button>
+        ${(hasW||hasS||hasT)?'<button class="recbtn del" title="Delete">🗑️</button>':''}`;
+      row.querySelector('.play').onclick=()=>{ if(hasT||bakedT){ sayTip(w).then(ok=>{ if(!ok) sayWord(w); }); } else sayWord(w); };
       wireRec(row.querySelector('.rec'), wk, secure, ()=>renderVoices());
-      const del=row.querySelector('.del'); if(del) del.onclick=async()=>{ await delClip(wk); await delClip(sk); renderVoices(); };
+      wireRec(row.querySelector('.rectip'), tk, secure, ()=>renderVoices());
+      const del=row.querySelector('.del'); if(del) del.onclick=async()=>{ await delClip(wk); await delClip(sk); await delClip(tk); renderVoices(); };
       vlist.appendChild(row);
     });
   });

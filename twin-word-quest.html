@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Twin Word Quest</title>
+<title>Word Quest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Fredoka:wght@400;500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
@@ -869,7 +869,7 @@ function importClips(file){
   fr.onload=async()=>{
     let data;
     try{ data=JSON.parse(fr.result); }catch(e){ bkNote("That file could not be read. Pick the twin-word-quest-voice.json file you saved.",true); return; }
-    if(!data || data.app!=="twinWordQuest" || !data.clips){ bkNote("That doesn't look like a Twin Word Quest voice backup.",true); return; }
+    if(!data || data.app!=="twinWordQuest" || !data.clips){ bkNote("That doesn't look like a Word Quest voice backup.",true); return; }
     let added=0, skipped=0;
     for(const k in data.clips){
       const ok=(typeof k==="string") && (k.indexOf("w:")===0 || k.indexOf("s:")===0);
@@ -1044,7 +1044,7 @@ function renderWelcome(){
   app.innerHTML=`
   <div class="welcome">
     <div class="logo">🏰</div>
-    <h1>Twin Word Quest</h1>
+    <h1>Word Quest</h1>
     <p>A reading adventure for two heroes</p>
     <div class="pcards" id="setupCards"></div>
     <button class="btn big" id="startBtn" style="margin-top:18px">Start the Quest →</button>
@@ -1191,7 +1191,7 @@ function importProgress(file,done){
   const fr=new FileReader();
   fr.onload=()=>{
     let data; try{ data=JSON.parse(fr.result); }catch(e){ return done("That file could not be read.",true); }
-    if(!data||data.app!=="twinWordQuest"||data.kind!=="progress") return done("That isn't a Twin Word Quest progress file.",true);
+    if(!data||data.app!=="twinWordQuest"||data.kind!=="progress") return done("That isn't a Word Quest progress file.",true);
     const r=mergeProgress(data);
     done(`✅ Merged progress for ${r.words} word record${r.words===1?"":"s"} across ${r.levels} level entr${r.levels===1?"y":"ies"}${data.device?` from ${data.device}`:""}.`);
   };

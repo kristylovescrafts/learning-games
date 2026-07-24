@@ -302,7 +302,7 @@
 .refcard .refico{font-size:1.9rem}
 .refcard .reft{font-family:var(--disp);font-weight:700;font-size:1.02rem}
 .refcard .refd{color:#6a5f86;font-weight:700;font-size:.82rem}
-.pickwrap{display:flex;flex-direction:column;align-items:center;margin-top:20px}
+.pickwrap{display:inline-block;text-align:center;margin-top:20px}
 .pickrow{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
 .pickbtn{display:flex;flex-direction:column;align-items:center;gap:6px;background:#fff;border:4px solid #eee;border-radius:24px;padding:20px 24px;min-width:140px;box-shadow:0 7px 0 rgba(0,0,0,.08);cursor:pointer}
 .pickbtn .pava{font-size:3.4rem;line-height:1}
@@ -310,7 +310,7 @@
 .pickbtn .pgem{font-weight:800;font-size:.85rem;color:#6a5f86}
 .pickbtn.is-thomas{border-color:#f6a623;box-shadow:0 7px 0 #f6a62366}
 .pickbtn.is-tori{border-color:#c86bd0;box-shadow:0 7px 0 #c86bd066}
-.pickparent{width:auto;margin:18px auto 0;padding:10px 20px}
+.pickparent{width:100%;margin-top:18px}
 .homelink{font-family:var(--disp);font-weight:600;color:#6a5f86;text-decoration:none;font-size:.95rem;background:#fff;padding:8px 16px;border-radius:999px;box-shadow:0 3px 0 rgba(0,0,0,.06);display:inline-block}
 .pindots{display:flex;gap:14px;justify-content:center;margin:14px 0}
 .pindot{width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #ccc}
@@ -463,14 +463,13 @@ function renderPick(){
   const t=state.players.thomas,o=state.players.tori;
   screen().innerHTML=`
     <div class="brand"><div class="logo">Math <span class="q">Quest</span></div><div class="sub">Who is playing?</div></div>
-    <div class="pickwrap">
+    <div style="text-align:center"><div class="pickwrap">
       <div class="pickrow">
         <button class="pickbtn is-thomas" data-who="thomas"><span class="pava">${t.avatar}</span><span class="pnm">${t.name}</span><span class="pgem">💎 ${t.gems||0}</span></button>
         <button class="pickbtn is-tori" data-who="tori"><span class="pava">${o.avatar}</span><span class="pnm">${o.name}</span><span class="pgem">💎 ${o.gems||0}</span></button>
       </div>
       <button class="btn ghost pickparent" id="pickParent">👤 Grown-up area</button>
-    </div>
-    <div style="text-align:center;margin-top:20px"><a class="homelink" href="/">🏠 All games</a></div>`;
+    </div></div>`;
   document.querySelectorAll('[data-who]').forEach(b=>b.addEventListener('click',async()=>{
     state.current=b.dataset.who; await save(); renderHome(); }));
   $('#pickParent').addEventListener('click',()=>{ if(locked()) renderPinGate(()=>{unlocked=true;renderGrownup();}); else renderGrownup(); });
@@ -644,7 +643,8 @@ function renderHome(){
         <span class="refico">🧮</span>
         <span><span class="reft">Hundred Chart Hops</span><br><span class="refd">Hop +10 down a column on the hundred chart</span></span>
       </button>
-    </div>`;
+    </div>
+    <div style="text-align:center;margin:22px 0 6px"><a class="homelink" href="/">🏠 All games</a></div>`;
   document.querySelectorAll('[data-trail]').forEach(b=>b.addEventListener('click',()=>startRound(b.dataset.trail)));
   $('#gearBtn').addEventListener('click',()=>{ if(locked()) renderPinGate(()=>{unlocked=true;renderGrownup();}); else renderGrownup(); });
 }

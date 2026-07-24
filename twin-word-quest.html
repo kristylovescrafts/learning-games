@@ -1033,7 +1033,6 @@ function renderPick(){
       </div>
       <button class="btn soft pickparent" id="pickParent">👤 Grown-up area</button>
     </div>
-    <div style="text-align:center;margin-top:20px"><a class="homelink" href="/">🏠 All games</a></div>
   </div>`;
   app.querySelectorAll('[data-who]').forEach(b=>b.onclick=()=>{
     state.current=b.dataset.who; state.selectedSet=P().lastSet||0; save(); go("home"); });
@@ -1377,7 +1376,8 @@ function renderHome(){
       A word counts as <b>mastered overall</b> only when reading <i>and</i> spelling are both green.
       Getting one wrong knocks it back a step, so mastery has to be re-earned on another day.
       The 🏰 castle level unlocks once half the words in a set are mastered overall.</div>
-  </div>`;
+  </div>
+  <div style="text-align:center;margin:22px 0 6px"><a class="homelink" href="/">🏠 All games</a></div>`;
 
   app.querySelector("#banner").style.setProperty('--set',s.color);
   wireTop();

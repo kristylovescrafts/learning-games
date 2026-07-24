@@ -61,6 +61,26 @@
   .apptag{display:inline-flex;align-items:center;gap:6px;background:#efeaff;color:#5f45cc;font-family:var(--disp);font-weight:700;
     font-size:.9rem;padding:5px 12px;border-radius:999px;margin:22px 0 10px}
   .device-tag{font-weight:800;color:var(--soft);font-size:.78rem}
+  .trend{background:var(--card);border-radius:18px;box-shadow:0 3px 0 var(--line);padding:14px 16px;margin-bottom:14px}
+  .trendhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .trendhead .tava{font-size:1.4rem}
+  .trendhead .tnm{font-family:var(--disp);font-weight:700;font-size:1.05rem}
+  .trendhead .up{color:var(--good);font-weight:800;font-size:.82rem;background:var(--good-bg);padding:3px 9px;border-radius:999px}
+  .trendhead .down{color:var(--low);font-weight:800;font-size:.82rem;background:var(--low-bg);padding:3px 9px;border-radius:999px}
+  .trendhead .flat{color:var(--soft);font-weight:800;font-size:.82rem;background:#f1eef9;padding:3px 9px;border-radius:999px}
+  .spark{margin:2px 0}
+  .nodata{color:var(--soft);font-weight:700;font-size:.82rem;padding:8px 0}
+  .log{margin-top:8px}
+  .log summary{font-family:var(--disp);font-weight:600;color:var(--soft);cursor:pointer;font-size:.88rem}
+  .logrow{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line);font-weight:800;font-size:.84rem}
+  .logrow:first-of-type{border-top:none;margin-top:6px}
+  .logdate{min-width:58px;color:var(--ink)}
+  .logbadge{font-weight:900;font-size:.78rem;padding:3px 9px;border-radius:999px;min-width:48px;text-align:center}
+  .logbadge.good{background:var(--good-bg);color:var(--good)}
+  .logbadge.mid{background:var(--mid-bg);color:#a86f00}
+  .logbadge.low{background:var(--low-bg);color:var(--low)}
+  .logbadge.none{background:#f1eef9;color:var(--none)}
+  .logmeta{color:var(--soft)}
   input[type=file]{display:none}
 </style>
 </head>
@@ -174,26 +194,101 @@ function kidCard(app,player){
 function render(snapshots){
   const box=$('#content');
   if(!snapshots||!snapshots.length){ box.innerHTML=`<div class="empty">No progress yet. Once the kids play and their tablet syncs, it shows up here.</div>`; $('#sub').textContent=''; return; }
-  // newest snapshot per (app + device)
-  const seen={}; const keep=[];
   snapshots.sort((a,b)=>String(b.saved).localeCompare(String(a.saved)));
+  window.__allSnaps=snapshots;
+
+  // newest snapshot per (app + device) for the "current standing" cards
+  const seen={}; const keep=[];
   snapshots.forEach(s=>{ const key=(s.app||'')+'|'+(s.device||''); if(seen[key])return; seen[key]=1; keep.push(s); });
-  // group by app
   const byApp={};
   keep.forEach(s=>{ (byApp[s.app]=byApp[s.app]||[]).push(s); });
+
   let html='';
   Object.keys(byApp).forEach(app=>{
     const meta=META[app]; html+=`<div class="apptag">${meta?meta.title:app}</div>`;
+    // history chart + log for each kid in this app
+    ['thomas','tori'].forEach(k=>{
+      const hist=historyFor(app,k,snapshots);
+      if(hist.days.length) html+=trendBlock(app,k,hist);
+    });
     byApp[app].forEach(s=>{
       if(s.device) html+=`<div class="device-tag">from ${s.device} · updated ${fmtWhen(s.saved)}</div>`;
       ['thomas','tori'].forEach(k=>{ if(s.players&&s.players[k]) html+=kidCard(app,s.players[k]); });
     });
   });
   box.innerHTML=html;
+  wireLogs();
   const newest=keep.map(s=>s.saved).sort().slice(-1)[0];
   $('#updated').textContent=newest?`Updated ${fmtWhen(newest)}`:'';
-  $('#sub').textContent=`Showing ${keep.length} snapshot${keep.length===1?'':'s'}.`;
+  $('#sub').textContent=`${snapshots.length} report${snapshots.length===1?'':'s'} on record.`;
 }
+
+/* ---- build a per-day history for one child in one app ---- */
+function dayKey(iso){ try{ return new Date(iso).toISOString().slice(0,10); }catch(e){ return String(iso).slice(0,10); } }
+function totals(levels){ let c=0,t=0; for(const id in (levels||{})){ if(id==='placeValue')continue; const L=levels[id]; c+=L.correct||0; t+=L.total||0; } return {c,t}; }
+function historyFor(app,key,snaps){
+  // one entry per day: use that day's newest snapshot (across devices, take the max gems + merged totals)
+  const perDay={};
+  snaps.forEach(s=>{
+    if(s.app!==app) return; const p=s.players&&s.players[key]; if(!p) return;
+    const dk=dayKey(s.saved);
+    const cur=perDay[dk];
+    // pick the snapshot with the most cumulative answers that day (usually the latest / most complete)
+    const tt=totals(p.levels);
+    if(!cur || tt.t>cur._tot){ perDay[dk]={ date:dk, gems:p.gems||0, correct:tt.c, total:tt.t, _tot:tt.t, levels:p.levels||{} }; }
+  });
+  const days=Object.values(perDay).sort((a,b)=>a.date.localeCompare(b.date));
+  return { name:(snaps.find(s=>s.players&&s.players[key])||{}).players[key].name||key,
+           avatar:(snaps.find(s=>s.players&&s.players[key])||{}).players[key].avatar||'🙂', days };
+}
+
+/* ---- the chart + daily log block ---- */
+function trendBlock(app,key,hist){
+  const meta=META[app];
+  const pts=hist.days.map(d=>({date:d.date, pct: d.total? Math.round(d.correct/d.total*100):null, gems:d.gems, day:d}));
+  const withPct=pts.filter(p=>p.pct!=null);
+  const spark=sparkline(withPct.map(p=>p.pct));
+  const first=withPct[0], last=withPct[withPct.length-1];
+  let trend='';
+  if(withPct.length>=2){
+    const diff=last.pct-first.pct;
+    trend = diff>2?`<span class="up">▲ up ${diff}% since ${fmtDate(first.date)}</span>`
+          : diff<-2?`<span class="down">▼ down ${Math.abs(diff)}% since ${fmtDate(first.date)}</span>`
+          : `<span class="flat">holding steady</span>`;
+  }
+  const rows=hist.days.slice().reverse().map(d=>{
+    const pct=d.total?Math.round(d.correct/d.total*100):null;
+    const played=meta.order.filter(m=>m[0]!=='placeValue' && d.levels[m[0]] && d.levels[m[0]].total).length;
+    return `<div class="logrow"><span class="logdate">${fmtDate(d.date)}</span>
+      <span class="logbadge ${pct==null?'none':band(pct)[0]}">${pct==null?'—':pct+'%'}</span>
+      <span class="logmeta">💎 ${d.gems} · ${played} level${played===1?'':'s'}</span></div>`;
+  }).join('');
+  return `<div class="trend">
+    <div class="trendhead"><span class="tava">${hist.avatar}</span><span class="tnm">${hist.name} over time</span>${trend}</div>
+    <div class="spark">${spark}</div>
+    <details class="log"><summary>Daily log (${hist.days.length} day${hist.days.length===1?'':'s'})</summary>${rows}</details>
+  </div>`;
+}
+
+/* ---- tiny inline SVG sparkline of accuracy % ---- */
+function sparkline(vals){
+  if(!vals.length) return '<div class="nodata">Not enough days yet to chart</div>';
+  const W=300,H=64,pad=6;
+  if(vals.length===1){ const y=H-pad-(vals[0]/100)*(H-2*pad);
+    return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}"><circle cx="${W/2}" cy="${y}" r="4" fill="#7c5cff"/><text x="${W/2}" y="${y-8}" text-anchor="middle" font-size="12" font-weight="800" fill="#6a5f86">${vals[0]}%</text></svg>`; }
+  const n=vals.length, dx=(W-2*pad)/(n-1);
+  const pt=(v,i)=>[pad+i*dx, H-pad-(v/100)*(H-2*pad)];
+  const d=vals.map((v,i)=>{const[x,y]=pt(v,i);return (i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1);}).join(' ');
+  const dots=vals.map((v,i)=>{const[x,y]=pt(v,i);return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#7c5cff"/>`;}).join('');
+  const area=`M${pad} ${H-pad} `+vals.map((v,i)=>{const[x,y]=pt(v,i);return 'L'+x.toFixed(1)+' '+y.toFixed(1);}).join(' ')+` L${(W-pad).toFixed(1)} ${H-pad} Z`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
+    <line x1="${pad}" y1="${H-pad-(0.8)*(H-2*pad)}" x2="${W-pad}" y2="${H-pad-(0.8)*(H-2*pad)}" stroke="#e3f7ec" stroke-width="1"/>
+    <path d="${area}" fill="#efeaff"/><path d="${d}" fill="none" stroke="#7c5cff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}
+    <text x="${pad}" y="12" font-size="11" font-weight="800" fill="#a99fc4">${vals[0]}%</text>
+    <text x="${W-pad}" y="12" text-anchor="end" font-size="11" font-weight="800" fill="#7c5cff">${vals[vals.length-1]}%</text>
+  </svg>`;
+}
+function wireLogs(){ /* <details> handles open/close natively */ }
 
 /* ---------- data sources ---------- */
 async function pull(){
@@ -222,25 +317,24 @@ function loadFile(file){
 /* ---------- demo ---------- */
 function demo(){
   const now=Date.now(), day=864e5;
-  render([{app:'twinWordQuest',device:"Thomas's iPad",saved:new Date(now).toISOString(),players:{
-    thomas:{name:'Thomas',avatar:'🦊',gems:127,levels:{
-      forest:{plays:6,correct:32,total:36,missed:{said:2,or:1},last:new Date(now-day).toISOString()},
-      city:{plays:2,correct:9,total:12,missed:{their:1},last:new Date(now-2*day).toISOString()},
-      mountain:{plays:2,correct:7,total:12,missed:{was:2,for:1},last:new Date(now-day).toISOString()},
-      station:{plays:3,correct:14,total:36,missed:{was:4,his:3,and:2},last:new Date(now).toISOString()}
-    },log:[
-      {at:new Date(now).toISOString(),modeId:'station',correct:5,wrong:7},
-      {at:new Date(now-day).toISOString(),modeId:'forest',correct:6,wrong:0}
-    ]},
-    tori:{name:'Tori',avatar:'🦄',gems:182,levels:{
-      forest:{plays:8,correct:44,total:48,missed:{he:1},last:new Date(now).toISOString()},
-      mountain:{plays:4,correct:20,total:24,missed:{not:2},last:new Date(now-day).toISOString()},
-      station:{plays:5,correct:28,total:60,missed:{would:3,could:2},last:new Date(now).toISOString()},
-      city:{plays:3,correct:16,total:18,last:new Date(now-2*day).toISOString()}
-    },log:[{at:new Date(now).toISOString(),modeId:'station',correct:6,wrong:6}]}
-  }}]);
+  const snaps=[];
+  // build 5 days of Thomas history (improving) + 5 of Tori
+  const mk=(app,dev,dayAgo,players)=>({app,device:dev,saved:new Date(now-dayAgo*day).toISOString(),players});
+  const tData=[  // [dayAgo, gems, forestC/forestT, stationC/stationT]
+    [4,40,[20,24],[8,24]],[3,58,[26,30],[12,30]],[2,79,[30,36],[18,36]],[1,101,[34,40],[24,42]],[0,127,[38,42],[28,48]]
+  ];
+  tData.forEach(([d,g,f,s])=>snaps.push(mk('twinWordQuest',"Thomas's iPad",d,{thomas:{name:'Thomas',avatar:'🦊',gems:g,levels:{
+    forest:{plays:6,correct:f[0],total:f[1],missed:{said:2},last:new Date(now-d*day).toISOString()},
+    station:{plays:3,correct:s[0],total:s[1],missed:{was:3,his:2},last:new Date(now-d*day).toISOString()}
+  },log:[]}})));
+  const oData=[[4,60,[30,36]],[3,96,[38,42]],[2,140,[44,48]],[1,168,[48,54]],[0,182,[52,58]]];
+  oData.forEach(([d,g,f])=>snaps.push(mk('twinWordQuest',"Tori's iPad",d,{tori:{name:'Tori',avatar:'🦄',gems:g,levels:{
+    forest:{plays:8,correct:f[0],total:f[1],missed:{he:1},last:new Date(now-d*day).toISOString()},
+    mountain:{plays:4,correct:20,total:24,missed:{not:2},last:new Date(now-d*day).toISOString()}
+  },log:[]}})));
+  render(snaps);
   $('#updated').textContent='Sample data';
-  $('#sub').textContent='This is a sample so you can see the layout.';
+  $('#sub').textContent='Sample: 5 days of history, chart + daily log.';
 }
 
 $('#refresh').onclick=pull;

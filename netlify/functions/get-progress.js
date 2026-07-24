@@ -23,13 +23,19 @@ exports.handler = async function () {
     const form = forms.find((f) => f.name === "progress-report") || forms[0];
     if (!form) return json(200, { snapshots: [] });
 
-    // newest submissions first
-    const subsRes = await fetch(
-      `${API}/forms/${form.id}/submissions?per_page=100`,
-      { headers: auth }
-    );
-    if (!subsRes.ok) throw new Error(`submissions ${subsRes.status}`);
-    const subs = await subsRes.json();
+    // pull every page of submissions (newest first), up to a sane cap
+    let subs = [];
+    for (let page = 1; page <= 10; page++) {
+      const r = await fetch(
+        `${API}/forms/${form.id}/submissions?per_page=100&page=${page}`,
+        { headers: auth }
+      );
+      if (!r.ok) break;
+      const batch = await r.json();
+      if (!batch.length) break;
+      subs = subs.concat(batch);
+      if (batch.length < 100) break;
+    }
 
     const snapshots = [];
     for (const s of subs) {

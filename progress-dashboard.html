@@ -268,7 +268,10 @@ function render(snapshots){
   snapshots.forEach(s=>{
     if(dayOf(s)!==day || !s.players) return;
     ['thomas','tori'].forEach(k=>{
-      if(!s.players[k]) return;
+      const p=s.players[k]; if(!p) return;
+      // skip a blank/empty twin that rode along on the other kid's report
+      const hasData=(p.gems>0) || (p.levels && Object.keys(p.levels).length>0) || (p.log && p.log.length>0);
+      if(!hasData) return;
       const key=s.app+'|'+k; if(seen[key]) return; seen[key]=1;
       (perApp[s.app]=perApp[s.app]||[]).push({snap:s,child:k});
     });

@@ -252,11 +252,22 @@ function render(snapshots){
   snapshots.sort((a,b)=>String(b.saved).localeCompare(String(a.saved)));
   window.__allSnaps=snapshots;
 
-  // newest snapshot per (app + device) for the "current standing" cards
-  const seen={}; const keep=[];
-  snapshots.forEach(s=>{ const key=(s.app||'')+'|'+(s.device||''); if(seen[key])return; seen[key]=1; keep.push(s); });
+  // newest snapshot per (app + device + child) for the "current standing" cards.
+  // Keying on child too is essential: Math reports have a blank device name, so
+  // Thomas's and Tori's math would collide and one card would vanish.
+  const seenPC={}; const bestForChild={};  // app|device|child -> newest snapshot containing that child
+  snapshots.forEach(s=>{
+    if(!s.players) return;
+    ['thomas','tori'].forEach(k=>{
+      if(!s.players[k]) return;
+      const key=(s.app||'')+'|'+(s.device||'')+'|'+k;
+      if(seenPC[key]) return;   // snapshots are already newest-first
+      seenPC[key]=1;
+      (bestForChild[s.app]=bestForChild[s.app]||[]).push({snap:s,child:k});
+    });
+  });
   const byApp={};
-  keep.forEach(s=>{ (byApp[s.app]=byApp[s.app]||[]).push(s); });
+  Object.keys(bestForChild).forEach(app=>{ byApp[app]=bestForChild[app]; });
 
   let html='';
   Object.keys(byApp).forEach(app=>{
@@ -266,14 +277,17 @@ function render(snapshots){
       const hist=historyFor(app,k,snapshots);
       if(hist.days.length) html+=trendBlock(app,k,hist);
     });
-    byApp[app].forEach(s=>{
+    // one current-standing card per child (newest snapshot that has that child)
+    byApp[app].forEach(entry=>{
+      const s=entry.snap, k=entry.child;
       if(s.device) html+=`<div class="device-tag">from ${s.device} · updated ${fmtWhen(s.saved)}</div>`;
-      ['thomas','tori'].forEach(k=>{ if(s.players&&s.players[k]) html+=kidCard(app,s.players[k]); });
+      if(s.players&&s.players[k]) html+=kidCard(app,s.players[k]);
     });
   });
   box.innerHTML=html;
   wireLogs();
-  const newest=keep.map(s=>s.saved).sort().slice(-1)[0];
+  const allKept=[].concat(...Object.values(byApp).map(a=>a.map(e=>e.snap)));
+  const newest=allKept.map(s=>s.saved).sort().slice(-1)[0];
   $('#updated').textContent=newest?`Updated ${fmtWhen(newest)}`:'';
   $('#sub').textContent=`${snapshots.length} report${snapshots.length===1?'':'s'} on record.`;
 }

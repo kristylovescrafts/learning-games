@@ -282,19 +282,34 @@ function render(snapshots){
 function dayKey(iso){ try{ return new Date(iso).toISOString().slice(0,10); }catch(e){ return String(iso).slice(0,10); } }
 function totals(levels){ let c=0,t=0; for(const id in (levels||{})){ if(id==='placeValue')continue; const L=levels[id]; c+=L.correct||0; t+=L.total||0; } return {c,t}; }
 function historyFor(app,key,snaps){
-  // one entry per day: use that day's newest snapshot (across devices, take the max gems + merged totals)
-  const perDay={};
-  snaps.forEach(s=>{
-    if(s.app!==app) return; const p=s.players&&s.players[key]; if(!p) return;
-    const dk=dayKey(s.saved);
-    const cur=perDay[dk];
-    // pick the snapshot with the most cumulative answers that day (usually the latest / most complete)
-    const tt=totals(p.levels);
-    if(!cur || tt.t>cur._tot){ perDay[dk]={ date:dk, gems:p.gems||0, correct:tt.c, total:tt.t, _tot:tt.t, levels:p.levels||{} }; }
+  // TRUE per-day breakdown: build from the session logs (each play is dated),
+  // so each day shows only THAT day's questions — not a running lifetime total.
+  const relevant=snaps.filter(s=>s.app===app && s.players && s.players[key]);
+  if(!relevant.length) return {name:key,avatar:'🙂',days:[]};
+  // gather every session log entry across all snapshots, de-duplicated by timestamp+mode
+  const seen={}; const sessions=[];
+  relevant.forEach(s=>{
+    const p=s.players[key]; (p.log||[]).forEach(e=>{
+      const id=e.modeId||e.mode; const at=e.at; if(!at) return;
+      const sig=at+'|'+id; if(seen[sig]) return; seen[sig]=1;
+      const correct=e.correct||0;
+      const wrong=(e.wrong!=null)?e.wrong:((e.total!=null)?Math.max(0,e.total-correct):0);
+      if(e.explored) return; // skip unscored sandbox plays
+      sessions.push({at, day:dayKey(at), modeId:id, correct, wrong, total:correct+wrong});
+    });
   });
-  const days=Object.values(perDay).sort((a,b)=>a.date.localeCompare(b.date));
-  return { name:(snaps.find(s=>s.players&&s.players[key])||{}).players[key].name||key,
-           avatar:(snaps.find(s=>s.players&&s.players[key])||{}).players[key].avatar||'🙂', days };
+  // gems per day = the max gems seen in any snapshot saved that day (cumulative, but fine as a daily "where they were")
+  const gemsByDay={};
+  relevant.forEach(s=>{ const g=s.players[key].gems||0; const dk=dayKey(s.saved);
+    if(gemsByDay[dk]==null || g>gemsByDay[dk]) gemsByDay[dk]=g; });
+  // bucket sessions by day
+  const byDay={};
+  sessions.forEach(x=>{ const d=byDay[x.day]||(byDay[x.day]={date:x.day,correct:0,total:0,modes:{},plays:0});
+    d.correct+=x.correct; d.total+=x.total; d.plays++; d.modes[x.modeId]=(d.modes[x.modeId]||0)+1; });
+  const days=Object.values(byDay).map(d=>({...d, gems:gemsByDay[d.date]||0,
+    levelsPlayed:Object.keys(d.modes).length})).sort((a,b)=>a.date.localeCompare(b.date));
+  const anyP=relevant.find(s=>s.players[key]).players[key];
+  return { name:anyP.name||key, avatar:anyP.avatar||'🙂', days };
 }
 
 /* ---- the chart + daily log block ---- */
@@ -313,10 +328,9 @@ function trendBlock(app,key,hist){
   }
   const rows=hist.days.slice().reverse().map(d=>{
     const pct=d.total?Math.round(d.correct/d.total*100):null;
-    const played=meta.order.filter(m=>m[0]!=='placeValue' && d.levels[m[0]] && d.levels[m[0]].total).length;
     return `<div class="logrow"><span class="logdate">${fmtDate(d.date)}</span>
       <span class="logbadge ${pct==null?'none':band(pct)[0]}">${pct==null?'—':pct+'%'}</span>
-      <span class="logmeta">💎 ${d.gems} · ${played} level${played===1?'':'s'}</span></div>`;
+      <span class="logmeta">${d.correct}/${d.total} right · ${d.levelsPlayed} level${d.levelsPlayed===1?'':'s'} that day</span></div>`;
   }).join('');
   return `<div class="trend">
     <div class="trendhead"><span class="tava">${hist.avatar}</span><span class="tnm">${hist.name} over time</span>${trend}</div>
@@ -386,30 +400,30 @@ function loadFile(file){
 function demo(){
   const now=Date.now(), day=864e5;
   const snaps=[];
-  // build 5 days of Thomas history (improving) + 5 of Tori
-  const mk=(app,dev,dayAgo,players)=>({app,device:dev,saved:new Date(now-dayAgo*day).toISOString(),players});
-  const tData=[  // [dayAgo, gems, forestC/forestT, stationC/stationT]
-    [4,40,[20,24],[8,24]],[3,58,[26,30],[12,30]],[2,79,[30,36],[18,36]],[1,101,[34,40],[24,42]],[0,127,[38,42],[28,48]]
+  const iso=(dayAgo,h=18)=>new Date(now-dayAgo*day - (18-h)*36e5).toISOString();
+  // Thomas — Word Quest: distinct results each day (improving)
+  const tDays=[ // [dayAgo, gems, [ [mode,correct,wrong] per session that day ]]
+    [4,40,[['forest',6,4],['station',4,6]]],
+    [3,58,[['forest',7,3],['mountain',6,2]]],
+    [2,79,[['forest',8,2],['station',6,4]]],
+    [1,101,[['mountain',9,1],['station',7,3]]],
+    [0,127,[['forest',10,0],['station',9,1]]],
   ];
-  tData.forEach(([d,g,f,s])=>snaps.push(mk('twinWordQuest',"Thomas's iPad",d,{thomas:{name:'Thomas',avatar:'🦊',gems:g,levels:{
-    forest:{plays:6,correct:f[0],total:f[1],missed:{said:2},last:new Date(now-d*day).toISOString()},
-    station:{plays:3,correct:s[0],total:s[1],missed:{was:3,his:2},last:new Date(now-d*day).toISOString()}
-  },log:[]}})));
-  const oData=[[4,60,[30,36]],[3,96,[38,42]],[2,140,[44,48]],[1,168,[48,54]],[0,182,[52,58]]];
-  oData.forEach(([d,g,f])=>snaps.push(mk('twinWordQuest',"Tori's iPad",d,{tori:{name:'Tori',avatar:'🦄',gems:g,levels:{
-    forest:{plays:8,correct:f[0],total:f[1],missed:{he:1},last:new Date(now-d*day).toISOString()},
-    mountain:{plays:4,correct:20,total:24,missed:{not:2},last:new Date(now-d*day).toISOString()}
-  },log:[]}})));
-  // a few days of Math Quest too, so both apps preview
-  const mData=[[3,22,[10,18]],[2,40,[18,26]],[1,58,[26,32]],[0,74,[30,34]]];
-  mData.forEach(([d,g,f])=>snaps.push(mk('mathQuest',"Thomas's iPad",d,{thomas:{name:'Thomas',avatar:'🦊',gems:g,levels:{
-    friendsChart:{plays:3,correct:f[0],wrong:f[1]-f[0],total:f[1],missed:{'7':2},last:new Date(now-d*day).toISOString()},
-    teensChart:{plays:2,correct:9,wrong:3,total:12,missed:{},last:new Date(now-d*day).toISOString()},
-    placeValue:{plays:2,correct:0,wrong:0,total:0,missed:{},last:new Date(now-d*day).toISOString()}
-  },log:[]}})));
+  const tlog=[]; let tgems=0;
+  tDays.forEach(([d,g,sess])=>{ tgems=g; sess.forEach(([m,c,wr],i)=>tlog.push({at:iso(d,17+i),mode:m,modeId:m,correct:c,total:c+wr,missed:[]})); });
+  snaps.push({app:'twinWordQuest',device:"Thomas's iPad",saved:iso(0,19),players:{thomas:{name:'Thomas',avatar:'🦊',gems:tgems,levels:{
+    forest:{plays:5,correct:41,total:49,missed:{said:2}},station:{plays:3,correct:20,total:24,missed:{was:2}},mountain:{plays:2,correct:15,total:18,missed:{}}
+  },log:tlog}}});
+  // Tori — Math Quest: distinct daily results
+  const oDays=[[3,30,[['triangle',7,3]]],[2,52,[['hopper',9,1],['pairs',8,2]]],[1,70,[['triangle',9,1]]],[0,88,[['hopper',10,0],['pairs',9,1]]]];
+  const olog=[]; let ogems=0;
+  oDays.forEach(([d,g,sess])=>{ ogems=g; sess.forEach(([m,c,wr],i)=>olog.push({at:iso(d,17+i),modeId:m,correct:c,wrong:wr,explored:false})); });
+  snaps.push({app:'mathQuest',device:"Tori's iPad",saved:iso(0,19),players:{tori:{name:'Tori',avatar:'🦄',gems:ogems,levels:{
+    triangle:{plays:2,correct:16,wrong:4,total:20,missed:{}},hopper:{plays:2,correct:19,wrong:1,total:20,missed:{}},pairs:{plays:2,correct:17,wrong:3,total:20,missed:{}}
+  },log:olog}}});
   render(snaps);
   $('#updated').textContent='Sample data';
-  $('#sub').textContent='Sample: 5 days of history, chart + daily log.';
+  $('#sub').textContent='Sample: true day-by-day history.';
 }
 
 $('#refresh').onclick=pull;

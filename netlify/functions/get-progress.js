@@ -45,7 +45,8 @@ exports.handler = async function () {
         try {
           const p = JSON.parse(d.payload);
           p.saved = p.saved || s.created_at;
-          snapshots.push(p);
+          const clean = stripEmpty(p);
+          if (clean) snapshots.push(clean);
           continue;
         } catch (e) {
           /* fall through to text parse */
@@ -54,7 +55,8 @@ exports.handler = async function () {
       // Fallback: parse the human-readable report text.
       if (d.report) {
         const p = parseReport(d.report, s.created_at, d.device || "");
-        if (p) snapshots.push(p);
+        const clean = p && stripEmpty(p);
+        if (clean) snapshots.push(clean);
       }
     }
     return json(200, { snapshots });
@@ -69,6 +71,23 @@ function json(status, obj) {
     headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
     body: JSON.stringify(obj),
   };
+}
+
+/* Remove any child with no real activity (0 gems, no levels, no log).
+   If neither child has activity, drop the whole snapshot. */
+function stripEmpty(p) {
+  if (!p || !p.players) return null;
+  const kept = {};
+  for (const k of Object.keys(p.players)) {
+    const pl = p.players[k] || {};
+    const played =
+      (pl.gems || 0) > 0 ||
+      (pl.levels && Object.keys(pl.levels).length > 0) ||
+      (pl.log && pl.log.length > 0);
+    if (played) kept[k] = pl;
+  }
+  if (Object.keys(kept).length === 0) return null;
+  return { ...p, players: kept };
 }
 
 /* -------- fallback parser for the emailed report text -------- */

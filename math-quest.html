@@ -313,6 +313,9 @@
 .pickbtn.is-thomas{border-color:#f6a623;box-shadow:0 7px 0 #f6a62366}
 .pickbtn.is-tori{border-color:#c86bd0;box-shadow:0 7px 0 #c86bd066}
 .pickparent{width:100%;margin-top:18px}
+.pickbtn.is-guest{border-color:#cbb8e6;box-shadow:0 7px 0 #cbb8e655;opacity:.9}
+.pickbtn.is-guest .pnm{color:#7a6a95}
+.pickbtn.is-guest .pgem{font-style:italic}
 .homelink{font-family:var(--disp);font-weight:600;color:#6a5f86;text-decoration:none;font-size:.95rem;background:#fff;padding:8px 16px;border-radius:999px;box-shadow:0 3px 0 rgba(0,0,0,.06);display:inline-block}
 .pindots{display:flex;gap:14px;justify-content:center;margin:14px 0}
 .pindot{width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid #ccc}
@@ -362,7 +365,7 @@ const MILESTONES=[
 ];
 function freshPlayer(name,avatar){return {name,avatar,stars:0,gems:0,rewardsClaimed:0,levels:{},log:[]};}
 let state={setupDone:false,current:'thomas',
-  players:{thomas:freshPlayer('Thomas','🦊'),tori:freshPlayer('Tori','🦄')},
+  players:{thomas:freshPlayer('Thomas','🦊'),tori:freshPlayer('Tori','🦄'),guest:freshPlayer('Guest','🐻')},
   report:{email:'',mode:'daily',lastSent:'',queue:[],device:''}, lock:{pin:'',off:false}};
 async function load(){const r=await Store.get(SAVE_KEY);
   if(r){try{Object.assign(state,JSON.parse(r));}catch(e){}}
@@ -370,7 +373,8 @@ async function load(){const r=await Store.get(SAVE_KEY);
   if(state.report.device===undefined)state.report.device='';
   if(!state.lock)state.lock={pin:'',off:false};
   if(!state.current)state.current='thomas';
-  ['thomas','tori'].forEach(k=>{const p=state.players[k];if(!p)return;
+  if(!state.players.guest)state.players.guest=freshPlayer('Guest','🐻');
+  ['thomas','tori','guest'].forEach(k=>{const p=state.players[k];if(!p)return;
     if(p.gems===undefined)p.gems=0; if(p.rewardsClaimed===undefined)p.rewardsClaimed=0;
     if(!p.levels)p.levels={}; if(!p.log)p.log=[];});
 }
@@ -470,9 +474,12 @@ function renderPick(){
         <button class="pickbtn is-thomas" data-who="thomas"><span class="pava">${t.avatar}</span><span class="pnm">${t.name}</span><span class="pgem">💎 ${t.gems||0}</span></button>
         <button class="pickbtn is-tori" data-who="tori"><span class="pava">${o.avatar}</span><span class="pnm">${o.name}</span><span class="pgem">💎 ${o.gems||0}</span></button>
       </div>
+      <button class="pickbtn is-guest" data-who="guest" style="margin-top:14px"><span class="pava">🐻</span><span class="pnm">Guest</span><span class="pgem">just visiting</span></button>
       <button class="btn ghost pickparent" id="pickParent">👤 Grown-up area</button>
     </div></div>`;
   document.querySelectorAll('[data-who]').forEach(b=>b.addEventListener('click',async()=>{
+    // Guest always starts fresh so demos never pile up or touch the twins
+    if(b.dataset.who==='guest'){ state.players.guest=freshPlayer('Guest','🐻'); }
     state.current=b.dataset.who; await save(); renderHome(); }));
   $('#pickParent').addEventListener('click',()=>{ if(locked()) renderPinGate(()=>{unlocked=true;renderGrownup();}); else renderGrownup(); });
 }

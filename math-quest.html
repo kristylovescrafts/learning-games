@@ -523,6 +523,21 @@ function logLevel(modeId,correct,wrong,explored){
   if(p.log.length>60)p.log=p.log.slice(-60);
   save();
 }
+function challengeLabel(c){
+  // Bond games: build the equation shown to the child
+  if(!c) return null;
+  if(c.type==='fixed' && c.form==='add1') return `${c.a} + □ = 10`;
+  if(c.type==='fixed' && c.form==='add2') return `□ + ${c.a} = 10`;
+  if(c.type==='fixed' && c.form==='sub')  return `10 − ${c.a} = □`;
+  if(c.type==='fixed' && c.given!=null)   return `${c.given} + □ = 10`;   // triangle
+  if(c.type==='sum')                      return `□ + □ = 10`;            // rainbow pairs
+  return null;
+}
+function problemLabel(q){
+  // Numpad/speed problems store parts like [10,'+',4,'=','▢']
+  if(q&&q.parts) return q.parts.map(x=>x==='▢'?'□':x).join(' ');
+  return null;
+}
 function noteMiss(modeId,item){
   const p=P(); if(!p.levels)p.levels={};
   const L=p.levels[modeId]||(p.levels[modeId]={plays:0,correct:0,wrong:0,total:0,missed:{},last:''});
@@ -952,7 +967,7 @@ function onDrop(el,slot){
   const c=round.challenges[round.index];
   if(c.type==='fixed'){
     if(+el.dataset.v===+slot.dataset.expect){slot.classList.add('over');el.classList.add('good','locked');feedbackMsg('');solveStep(true);}
-    else{if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode,c.item!=null?String(c.item):null);}busy=true;setTimeout(()=>{ejectSlot(slot);mascotReact('encourage');feedbackMsg(c.hint);busy=false;},260);}
+    else{if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, challengeLabel(c) || (c.item!=null?String(c.item):null));}busy=true;setTimeout(()=>{ejectSlot(slot);mascotReact('encourage');feedbackMsg(c.hint);busy=false;},260);}
     return true;
   }
   // sum (pairs)
@@ -960,7 +975,7 @@ function onDrop(el,slot){
   if(slots.every(s=>s.classList.contains('filled'))){
     const sum=slots.reduce((a,s)=>a+(+s.dataset.val),0);
     if(sum===c.target){slots.forEach(s=>{const t=s.firstElementChild;if(t)t.classList.add('good','locked');});feedbackMsg('');solveStep(true);}
-    else{if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode,c.target!=null?String(c.target):null);}busy=true;setTimeout(()=>{slots.forEach(ejectSlot);mascotReact('encourage');feedbackMsg(c.hint);busy=false;},300);}
+    else{if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, challengeLabel(c) || (c.target!=null?String(c.target):null));}busy=true;setTimeout(()=>{slots.forEach(ejectSlot);mascotReact('encourage');feedbackMsg(c.hint);busy=false;},300);}
   }
   return true;
 }
@@ -990,7 +1005,7 @@ function checkBond(k){
     const bond=document.getElementById('bond'+k);if(bond)bond.classList.add('done');
     feedbackMsg('');solveStep(false);
   }else{
-    if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, target!=null?String(target):null);}
+    if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, (round.M&&round.M.kind==='slotgame'&&round.challenges?challengeLabel(round.challenges[round.index]):null) || (target!=null?String(target):null));}
     busy=true;setTimeout(()=>{slots.forEach(ejectSlot);mascotReact('encourage');feedbackMsg(msg);busy=false;},300);
   }
 }
@@ -1095,7 +1110,7 @@ function bindPad(q){
     else if(key==='go'){
       if(round.input==='')return;
       if(parseInt(round.input,10)===q.answer){$('#feedback').innerHTML=`<div class="yay">${pick(YAYS)}</div>`;solveStep(true);}
-      else{if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode,q.q!=null?String(q.q):null);}$('#feedback').innerHTML=`<div class="hintbox">${q.hint}</div>`;mascotReact('encourage');round.input='';draw();}
+      else{if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, problemLabel(q) || (q.q!=null?String(q.q):null));}$('#feedback').innerHTML=`<div class="hintbox">${q.hint}</div>`;mascotReact('encourage');round.input='';draw();}
       return;
     }else if(round.input.length<3)round.input=(round.input==='0'?'':round.input)+key;
     draw();
@@ -1126,7 +1141,7 @@ function renderHopper(){
     if(busy)return;
     if(+b.dataset.v===h.ans){frog.classList.add('jump');frog.style.left=frogXY(h,h.ans)+'%';setTimeout(()=>frog.classList.remove('jump'),850);
       $('#feedback').innerHTML=`<div class="yay">${pick(YAYS)}</div>`;solveStep(true);}
-    else{if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode,String(h.start));}$('#feedback').innerHTML=`<div class="hintbox">A hop of ${h.dir>0?'+10':'−10'} keeps the SAME ones digit — ${h.start} keeps its ${h.start%10}!</div>`;mascotReact('encourage');}
+    else{if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, `${h.start} ${h.dir>0?'+':'−'}10 = □`);}$('#feedback').innerHTML=`<div class="hintbox">A hop of ${h.dir>0?'+10':'−10'} keeps the SAME ones digit — ${h.start} keeps its ${h.start%10}!</div>`;mascotReact('encourage');}
   }));
 }
 
@@ -1156,7 +1171,7 @@ function wireHundred(){
       if(round&&round.index<round.total)updateHundredPrompt();
     }else if(!c.classList.contains('lit')&&!c.classList.contains('start')){
       c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),400);
-      if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode,String(r.start));}$('#feedback').innerHTML=`<div class="hintbox">${r.dir>0?'+10 slides one row DOWN — same column!':'−10 slides one row UP — same column!'}</div>`;mascotReact('encourage');
+      if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, `${r.start} ${r.dir>0?'+':'−'}10 = □`);}$('#feedback').innerHTML=`<div class="hintbox">${r.dir>0?'+10 slides one row DOWN — same column!':'−10 slides one row UP — same column!'}</div>`;mascotReact('encourage');
     }
   }));
 }

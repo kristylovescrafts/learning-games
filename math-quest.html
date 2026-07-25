@@ -609,29 +609,38 @@ async function postReport(subject,body){
     return res.ok; }catch(e){ return false; }
 }
 let sessionDirty=false;
-function sendNow(){
-  const r=state.report||{}; if(!r.mode||r.mode==='off')return;
+// Confirmed send: use fetch (we can read res.ok) so a dropped send is RETRIED,
+// not silently lost. sendBeacon is fire-and-forget and on iPad often reports
+// success while dropping the request — so we only use it as a last resort on close.
+async function sendNow(){
+  const r=state.report||{}; if(!r.mode||r.mode==='off')return true;
   const today=todayStr();
   const subject=`Math Quest progress — ${new Date().toLocaleDateString()}`, body=fullReport();
-  const params=new URLSearchParams({'form-name':'progress-report','subject':subject,'report':body,'payload':progressPayload(),'bot-field':''}).toString();
-  let ok=false;
-  try{ if(navigator.sendBeacon) ok=navigator.sendBeacon('/',new Blob([params],{type:'application/x-www-form-urlencoded'})); }catch(e){}
-  if(ok){ state.report.lastSent=today; state.report.queue=[]; sessionDirty=false; save(); return; }
-  postReport(subject,body).then(good=>{ if(good){state.report.lastSent=today;state.report.queue=[];sessionDirty=false;}
-    else state.report.queue=[{at:new Date().toISOString(),subject,body}]; save(); });
+  const good=await postReport(subject,body);
+  if(good){ state.report.lastSent=today; state.report.queue=[]; sessionDirty=false; save(); return true; }
+  // failed — remember it so we can retry on the next level or next launch
+  state.report.queue=[{at:new Date().toISOString(),subject,body}]; save(); return false;
+}
+// beacon-only flush for the moment the tab is closing (can't await there)
+function beaconFlush(){
+  const r=state.report||{}; if(!r.mode||r.mode==='off')return; if(!sessionDirty)return;
+  try{
+    const subject=`Math Quest progress — ${new Date().toLocaleDateString()}`, body=fullReport();
+    const params=new URLSearchParams({'form-name':'progress-report','subject':subject,'report':body,'payload':progressPayload(),'bot-field':''}).toString();
+    if(navigator.sendBeacon) navigator.sendBeacon('/',new Blob([params],{type:'application/x-www-form-urlencoded'}));
+  }catch(e){}
 }
 function maybeSendReport(){
   const r=state.report||{}; if(!r.mode||r.mode==='off')return;
   sessionDirty=true;
-  // Send now, while the app is open — the on-close signal is unreliable on tablets.
-  // Every report is a full cumulative snapshot, so sending after each level just
-  // keeps the dashboard current. "Daily" still limits the EMAIL (once/day) via lastSent.
+  // retry any earlier failure first, then send this level (both confirmed via fetch)
+  retryQueued();
   sendNow();
 }
 function wireSessionEnd(){
-  const flush=()=>{ if(sessionDirty) sendNow(); };
-  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden') flush(); });
-  window.addEventListener('pagehide',flush);
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ sendNow(); beaconFlush(); } });
+  window.addEventListener('pagehide',beaconFlush);
+  window.addEventListener('online',retryQueued);
 }
 function retryQueued(){ const r=state.report||{}; if(!r.queue||!r.queue.length)return;
   const it=r.queue[0]; postReport(it.subject,it.body).then(ok=>{ if(ok){state.report.queue=[];state.report.lastSent=todayStr();save();} }); }

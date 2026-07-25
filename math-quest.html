@@ -586,7 +586,7 @@ async function postReport(subject,body){
 let sessionDirty=false;
 function sendNow(){
   const r=state.report||{}; if(!r.mode||r.mode==='off')return;
-  const today=todayStr(); if(r.mode==='daily'&&r.lastSent===today)return;
+  const today=todayStr();
   const subject=`Math Quest progress — ${new Date().toLocaleDateString()}`, body=fullReport();
   const params=new URLSearchParams({'form-name':'progress-report','subject':subject,'report':body,'payload':progressPayload(),'bot-field':''}).toString();
   let ok=false;
@@ -598,7 +598,9 @@ function sendNow(){
 function maybeSendReport(){
   const r=state.report||{}; if(!r.mode||r.mode==='off')return;
   sessionDirty=true;
-  if(r.mode==='daily')return;
+  // Send now, while the app is open — the on-close signal is unreliable on tablets.
+  // Every report is a full cumulative snapshot, so sending after each level just
+  // keeps the dashboard current. "Daily" still limits the EMAIL (once/day) via lastSent.
   sendNow();
 }
 function wireSessionEnd(){

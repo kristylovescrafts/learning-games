@@ -575,7 +575,10 @@ function playerReport(key){
 function fullReport(){ return ['thomas','tori'].map(playerReport).join('\n\n'+'-'.repeat(46)+'\n\n'); }
 function progressPayload(){
   const snap={app:'mathQuest',kind:'progress',saved:new Date().toISOString(),device:(state.report&&state.report.device)||'',players:{}};
-  ['thomas','tori'].forEach(k=>{const p=state.players[k];snap.players[k]={name:p.name,avatar:p.avatar,gems:p.gems||0,levels:p.levels||{},log:(p.log||[]).slice(-12)};});
+  ['thomas','tori'].forEach(k=>{const p=state.players[k];
+    const played=(p.gems||0)>0 || Object.keys(p.levels||{}).length>0 || (p.log&&p.log.length>0);
+    if(!played) return;
+    snap.players[k]={name:p.name,avatar:p.avatar,gems:p.gems||0,levels:p.levels||{},log:(p.log||[]).slice(-12)};});
   return JSON.stringify(snap);
 }
 async function postReport(subject,body){

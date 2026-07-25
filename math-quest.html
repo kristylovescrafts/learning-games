@@ -733,7 +733,10 @@ function renderGrownup(){
   else gSettings(body,o);
 }
 function gProgress(body){
-  body.innerHTML=['thomas','tori'].map(k=>{
+  const hasPlayed=p=>{ const lv=p&&p.levels||{}; return (p&&p.gems>0) || Object.keys(lv).some(id=>lv[id]&&(lv[id].total||lv[id].plays)) || (p&&p.log&&p.log.length>0); };
+  const shown=['thomas','tori'].filter(k=>hasPlayed(state.players[k]));
+  if(!shown.length){ body.innerHTML=`<div class="gpcard"><div class="gph">No one has played on this iPad yet.</div><div class="gpl"><span class="muted">Pick a player from the home screen and finish a level — it'll show up here.</span></div></div>`; return; }
+  body.innerHTML=shown.map(k=>{
     const p=state.players[k];const lv=p.levels||{};
     const rows=LEVEL_ORDER.map(id=>{const M=MODES[id];const L=lv[id];
       if(!L||!L.total)return `<div class="gpl"><span>${M.icon} ${M.name}</span><span class="muted">—</span></div>`;

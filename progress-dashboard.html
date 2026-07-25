@@ -25,6 +25,9 @@
   .btn.ghost{background:#fff;color:var(--ink);box-shadow:0 4px 0 var(--line)}
   .btn.ghost:active{box-shadow:0 1px 0 var(--line)}
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+  .daybar{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 16px}
+  .daychip{font-family:var(--disp,sans-serif);font-weight:700;font-size:.9rem;padding:8px 14px;border-radius:999px;border:none;cursor:pointer;background:#efeaff;color:#5f45cc}
+  .daychip.on{background:#7c5cff;color:#fff}
   .kidcard{background:var(--card);border-radius:22px;box-shadow:0 4px 0 var(--line),0 12px 30px rgba(43,33,64,.06);padding:18px;margin-bottom:18px}
   .kidhead{display:flex;align-items:center;gap:12px;margin-bottom:4px}
   .kidhead .ava{font-size:2.4rem;line-height:1}
@@ -202,7 +205,7 @@ function levelRow(m,L){
   const correct=L.correct||0, total=L.total||0, wrong=(L.wrong!=null?L.wrong:total-correct);
   const pct=Math.round(correct/total*100); const [cls,lbl]=band(pct);
   const barc=cls==='good'?'var(--good)':cls==='mid'?'var(--mid)':'var(--low)';
-  const miss=Object.keys(L.missed||{}).map(k=>({k,n:L.missed[k]})).sort((a,b)=>b.n-a.n).slice(0,6);
+  const miss=Object.keys(L.missed||{}).map(k=>({k,n:L.missed[k]})).sort((a,b)=>b.n-a.n);
   return `<div class="lv"><div class="ico">${ico}</div><div class="body">
       <div class="nm">${name}</div>
       <div class="det">played ${L.plays||1}× · ${correct} right, ${wrong} wrong${L.last?` · last ${fmtDate(L.last)}`:''}</div>
@@ -238,7 +241,7 @@ function kidCard(app,player){
   return `<div class="kidcard">
     <div class="kidhead"><div class="ava">${player.avatar||'🙂'}</div>
       <div><div class="nm">${player.name||'Player'}</div>
-        <div class="meta">💎 ${player.gems||0} gems${tried.length?` · ${tried.length} level${tried.length===1?'':'s'} played`:''}</div></div></div>
+        <div class="meta">${tried.length?`${tried.length} level${tried.length===1?'':'s'} this day`:'no scored levels this day'}</div></div></div>
     ${extra}
     ${rows}
     ${notTried.length?`<div class="not-tried-note">🚧 Hasn't tried yet: ${notTried.join(', ')}</div>`:''}
@@ -246,50 +249,55 @@ function kidCard(app,player){
   </div>`;
 }
 
+let SELECTED_DAY = null;   // which day the dashboard is showing (null = latest)
+function dayOf(s){ return s.day || (s.saved ? String(s.saved).slice(0,10) : ''); }
+
 function render(snapshots){
   const box=$('#content');
-  if(!snapshots||!snapshots.length){ box.innerHTML=`<div class="empty">No progress yet. Once the kids play and their tablet syncs, it shows up here.</div>`; $('#sub').textContent=''; return; }
+  if(!snapshots||!snapshots.length){ box.innerHTML=`<div class="empty">No progress yet. Once the kids play, today's report shows up here.</div>`; $('#sub').textContent=''; return; }
   snapshots.sort((a,b)=>String(b.saved).localeCompare(String(a.saved)));
   window.__allSnaps=snapshots;
 
-  // newest snapshot per (app + device + child) for the "current standing" cards.
-  // Keying on child too is essential: Math reports have a blank device name, so
-  // Thomas's and Tori's math would collide and one card would vanish.
-  const seenPC={}; const bestForChild={};  // app|device|child -> newest snapshot containing that child
+  // All days that have any data, newest first.
+  const days=[...new Set(snapshots.map(dayOf).filter(Boolean))].sort().reverse();
+  if(!SELECTED_DAY || days.indexOf(SELECTED_DAY)<0) SELECTED_DAY = days[0];
+  const day = SELECTED_DAY;
+
+  // For the selected day: newest report per (app + child).
+  const seen={}; const perApp={};
   snapshots.forEach(s=>{
-    if(!s.players) return;
+    if(dayOf(s)!==day || !s.players) return;
     ['thomas','tori'].forEach(k=>{
       if(!s.players[k]) return;
-      const key=(s.app||'')+'|'+(s.device||'')+'|'+k;
-      if(seenPC[key]) return;   // snapshots are already newest-first
-      seenPC[key]=1;
-      (bestForChild[s.app]=bestForChild[s.app]||[]).push({snap:s,child:k});
+      const key=s.app+'|'+k; if(seen[key]) return; seen[key]=1;
+      (perApp[s.app]=perApp[s.app]||[]).push({snap:s,child:k});
     });
   });
-  const byApp={};
-  Object.keys(bestForChild).forEach(app=>{ byApp[app]=bestForChild[app]; });
 
-  let html='';
-  Object.keys(byApp).forEach(app=>{
-    const meta=META[app]; html+=`<div class="apptag">${meta?meta.title:app}</div>`;
-    // history chart + log for each kid in this app
-    ['thomas','tori'].forEach(k=>{
-      const hist=historyFor(app,k,snapshots);
-      if(hist.days.length) html+=trendBlock(app,k,hist);
+  // Day picker
+  let html = `<div class="daybar">` + days.map(dk=>
+    `<button class="daychip${dk===day?' on':''}" data-day="${dk}">${dk===days[0]?'Today':fmtDate(dk)}</button>`
+  ).join('') + `</div>`;
+
+  if(!Object.keys(perApp).length){
+    html += `<div class="empty">No activity on ${fmtDate(day)}.</div>`;
+  } else {
+    Object.keys(perApp).forEach(app=>{
+      const meta=META[app]; html+=`<div class="apptag">${meta?meta.title:app}</div>`;
+      perApp[app].forEach(entry=>{
+        const s=entry.snap, k=entry.child;
+        if(s.device) html+=`<div class="device-tag">from ${s.device} · ${fmtWhen(s.saved)}</div>`;
+        html+=kidCard(app,s.players[k]);
+      });
     });
-    // one current-standing card per child (newest snapshot that has that child)
-    byApp[app].forEach(entry=>{
-      const s=entry.snap, k=entry.child;
-      if(s.device) html+=`<div class="device-tag">from ${s.device} · updated ${fmtWhen(s.saved)}</div>`;
-      if(s.players&&s.players[k]) html+=kidCard(app,s.players[k]);
-    });
-  });
+  }
   box.innerHTML=html;
   wireLogs();
-  const allKept=[].concat(...Object.values(byApp).map(a=>a.map(e=>e.snap)));
-  const newest=allKept.map(s=>s.saved).sort().slice(-1)[0];
+  // wire day chips
+  box.querySelectorAll('.daychip').forEach(b=>b.onclick=()=>{ SELECTED_DAY=b.dataset.day; render(window.__allSnaps); });
+  const newest=snapshots.map(s=>s.saved).sort().slice(-1)[0];
   $('#updated').textContent=newest?`Updated ${fmtWhen(newest)}`:'';
-  $('#sub').textContent=`${snapshots.length} report${snapshots.length===1?'':'s'} on record.`;
+  $('#sub').textContent = day===days[0] ? `Showing today · ${days.length} day${days.length===1?'':'s'} on record.` : `Showing ${fmtDate(day)} · tap "Today" to return.`;
 }
 
 /* ---- build a per-day history for one child in one app ---- */

@@ -513,13 +513,13 @@ function renderPinGate(onOK){
 }
 
 /* ======================= LEVEL TRACKING ======================= */
-function logLevel(modeId,correct,wrong,explored){
+function logLevel(modeId,correct,wrong,explored,missed){
   const p=P(); if(!p.levels)p.levels={};
   const L=p.levels[modeId]||(p.levels[modeId]={plays:0,correct:0,wrong:0,total:0,missed:{},last:''});
   L.plays++; L.correct+=correct||0; L.wrong+=wrong||0; L.total+=(correct||0)+(wrong||0);
   L.last=new Date().toISOString();
   if(!p.log)p.log=[];
-  p.log.push({at:L.last,modeId,correct:correct||0,wrong:wrong||0,explored:!!explored});
+  p.log.push({at:L.last,modeId,correct:correct||0,wrong:wrong||0,explored:!!explored,missed:missed||{}});
   if(p.log.length>60)p.log=p.log.slice(-60);
   save();
 }
@@ -541,7 +541,8 @@ function problemLabel(q){
 function noteMiss(modeId,item){
   const p=P(); if(!p.levels)p.levels={};
   const L=p.levels[modeId]||(p.levels[modeId]={plays:0,correct:0,wrong:0,total:0,missed:{},last:''});
-  if(item!=null){ L.missed[item]=(L.missed[item]||0)+1; }
+  if(item!=null){ L.missed[item]=(L.missed[item]||0)+1;
+    if(typeof round==='object'&&round){ round.missed=round.missed||{}; round.missed[item]=(round.missed[item]||0)+1; } }
 }
 
 /* ======================= PROGRESS REPORTS ======================= */
@@ -596,11 +597,21 @@ function playerReport(key){
 }
 function fullReport(){ return ['thomas','tori'].map(playerReport).join('\n\n'+'-'.repeat(46)+'\n\n'); }
 function progressPayload(){
-  const snap={app:'mathQuest',kind:'progress',saved:new Date().toISOString(),device:(state.report&&state.report.device)||'',players:{}};
-  ['thomas','tori'].forEach(k=>{const p=state.players[k];
-    const played=(p.gems||0)>0 || Object.keys(p.levels||{}).length>0 || (p.log&&p.log.length>0);
-    if(!played) return;
-    snap.players[k]={name:p.name,avatar:p.avatar,gems:p.gems||0,levels:p.levels||{},log:(p.log||[]).slice(-12)};});
+  // DAILY report: send only TODAY's plays, built from the session log.
+  // Each report stands alone (no cumulative all-time totals), so days are discrete.
+  const day=todayStr();
+  const snap={app:'mathQuest',kind:'daily',day:day,saved:new Date().toISOString(),device:(state.report&&state.report.device)||'',players:{}};
+  ['thomas','tori'].forEach(k=>{const p=state.players[k]; if(!p) return;
+    const today=(p.log||[]).filter(e=>e.at && e.at.slice(0,10)===day && !e.explored);
+    if(!today.length) return;                 // nothing today -> not in this report
+    // roll today's plays up per level
+    const levels={};
+    today.forEach(e=>{ const id=e.modeId; const L=levels[id]||(levels[id]={plays:0,correct:0,wrong:0,total:0,missed:{},last:e.at});
+      L.plays++; L.correct+=e.correct||0; L.wrong+=e.wrong||0; L.total+=(e.correct||0)+(e.wrong||0); if(e.at>L.last)L.last=e.at;
+      // carry the specific missed problems recorded on the master level (best-effort)
+      if(e.missed){ for(const k in e.missed){ L.missed[k]=(L.missed[k]||0)+e.missed[k]; } }
+    });
+    snap.players[k]={name:p.name,avatar:p.avatar,day:day,levels:levels,log:today};});
   return JSON.stringify(snap);
 }
 /* Google Sheet endpoint (the reliable pipe). Set by Kristy's deploy URL. */
@@ -1050,7 +1061,7 @@ function solveStep(advance){
 
 /* ============================================================ COMPLETE + REWARDS ============================================================ */
 function finishRound(){
-  if(round && round.M && round.M.kind!=='explore'){ logLevel(round.mode, round.correct||0, round.wrong||0, false); maybeSendReport(); }
+  if(round && round.M && round.M.kind!=='explore'){ logLevel(round.mode, round.correct||0, round.wrong||0, false, round.missed||{}); maybeSendReport(); }
   setScene('');celebrate(true);driftSky();
   movementBreak(showTrophy);
 }

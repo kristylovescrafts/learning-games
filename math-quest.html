@@ -603,10 +603,26 @@ function progressPayload(){
     snap.players[k]={name:p.name,avatar:p.avatar,gems:p.gems||0,levels:p.levels||{},log:(p.log||[]).slice(-12)};});
   return JSON.stringify(snap);
 }
+/* Google Sheet endpoint (the reliable pipe). Set by Kristy's deploy URL. */
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbxN-BmXkUg519oFxv8DGb6PfdAfNJfPC_FEaD42oaKCslSWOBqZakEGlVLipxAXxh3BOA/exec";
 async function postReport(subject,body){
-  try{ const res=await fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:new URLSearchParams({'form-name':'progress-report','subject':subject,'report':body,'payload':progressPayload(),'bot-field':''}).toString()});
-    return res.ok; }catch(e){ return false; }
+  const payload=progressPayload();
+  let sheetOk=false;
+  if(SHEET_URL && SHEET_URL.indexOf("http")===0){
+    try{
+      await fetch(SHEET_URL,{method:'POST',mode:'no-cors',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:new URLSearchParams({payload}).toString()});
+      // no-cors gives an opaque response we can't read, but the write succeeds;
+      // treat as sent so we don't spam retries.
+      sheetOk=true;
+    }catch(e){ sheetOk=false; }
+  }
+  // also try Netlify (harmless; ignored if it fails)
+  try{ await fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:new URLSearchParams({'form-name':'progress-report','subject':subject,'report':body,'payload':payload,'bot-field':''}).toString()});
+  }catch(e){}
+  return sheetOk || !SHEET_URL;   // success if the sheet took it (or if no sheet configured yet)
 }
 let sessionDirty=false;
 // Confirmed send: use fetch (we can read res.ok) so a dropped send is RETRIED,

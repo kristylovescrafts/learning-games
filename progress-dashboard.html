@@ -387,10 +387,13 @@ function sparkline(vals){
 function wireLogs(){ /* <details> handles open/close natively */ }
 
 /* ---------- data sources ---------- */
+const SHEET_URL = "https://script.google.com/macros/s/AKfycbxN-BmXkUg519oFxv8DGb6PfdAfNJfPC_FEaD42oaKCslSWOBqZakEGlVLipxAXxh3BOA/exec";
 async function pull(){
   $('#sub').textContent='Checking for new results…';
   try{
-    const res=await fetch('/.netlify/functions/get-progress',{headers:{'accept':'application/json'}});
+    // Primary: Google Sheet (the reliable pipe). Falls back to the old Netlify function.
+    const url = (SHEET_URL && SHEET_URL.indexOf('http')===0) ? SHEET_URL : '/.netlify/functions/get-progress';
+    const res=await fetch(url,{headers:{'accept':'application/json'}});
     if(!res.ok) throw 0;
     const data=await res.json();
     const snaps=(data.snapshots||data||[]).filter(Boolean);

@@ -299,37 +299,55 @@ function newCards(){
 function story(){
   $('lockRow').style.display = S.pages.length ? 'none' : '';
 
-  var head = S.starter
-    ? '<div class="banner"><span class="cap">Your story starts here</span>'+esc(S.starter)+'</div>'
-    : '<h2>Pick a card to start</h2>'+
-      '<p class="lede">Tap one to turn it over.</p>'+
-      '<div class="cards">'+ S.three.map(function(_,i){
+  /* 1. the story starter - always on screen, never a separate step */
+  var head;
+  if(S.starter){
+    head = '<div class="banner"><span class="cap">Your story starts here</span>'+
+      esc(S.starter)+
+      '<div class="row"><button class="go ghost small" onclick="clearStarter()">'+
+      'Pick a different card</button></div></div>';
+  } else {
+    head = '<div class="banner">'+
+      '<span class="cap">Pick a card, or just start writing</span>'+
+      '<div class="cards" style="margin-top:9px">'+
+        S.three.map(function(_,i){
           return '<button class="starter" id="c'+i+'" onclick="flip('+i+')">?</button>';
-        }).join('') +'</div>'+
-      '<div class="row"><button class="go ghost small" onclick="newCards();story()">Different cards</button>'+
-      '<button class="go ghost small" onclick="ownIdea()">I have my own idea</button></div>';
+        }).join('')+
+      '</div>'+
+      '<div class="row"><button class="go ghost small" onclick="newCards();story()">'+
+      'Different cards</button></div></div>';
+  }
 
-  var turn = (S.who==='Thomas and Tori' && S.starter)
+  /* 2. characters, directly underneath the starter */
+  var chars = S.characters
+    ? '&#128100; '+esc(S.characters.length>44 ? S.characters.slice(0,44)+'...' : S.characters)
+    : '&#128100; Who is in my story?';
+  var whoBtn = '<div class="row" style="margin-top:-4px;margin-bottom:16px">'+
+    '<button class="go ghost small" onclick="askChars()">'+chars+'</button></div>';
+
+  var turn = (S.who==='Thomas and Tori')
     ? '<div class="hint">'+(S.pages.length%2===0?'Thomas':'Tori')+"'s turn</div>" : '';
 
-  screenEl.innerHTML = head +
-    '<div id="pages">'+ S.pages.map(pageHtml).join('') +'</div>' +
-    (S.starter ? nudgeHtml() + turn + '<div id="composer"></div>' +
-      '<div class="row">'+
-        (S.pages.length ? '<button class="go" onclick="screenFinish()">Finish my book</button>' : '')+
-        '<button class="go ghost small" onclick="askChars()">'+
-          (S.characters?'Change my characters':'Who is in my story?')+'</button>'+
-      '</div>' : '');
+  /* 3. pages, 4. what to write next, 5. writing box, 6. finish */
+  screenEl.innerHTML =
+    head + whoBtn +
+    '<div id="pages">'+ S.pages.map(pageHtml).join('') +'</div>'+
+    nudgeHtml() + turn +
+    '<div id="composer"></div>'+
+    (S.pages.length
+      ? '<div class="row"><button class="go" onclick="screenFinish()">Finish my book</button></div>'
+      : '');
 
-  if(S.starter) composer();
+  composer();
 }
+
+function clearStarter(){ S.starter=''; newCards(); story(); }
 
 function flip(i){
   var el=$('c'+i);
   el.classList.add('flipped'); el.textContent=S.three[i]; el.onclick=null;
-  setTimeout(function(){ S.starter=S.three[i]; lastNudge=''; story(); }, 750);
+  setTimeout(function(){ S.starter=S.three[i]; story(); }, 750);
 }
-function ownIdea(){ S.starter='My own story'; lastNudge=''; story(); }
 
 /* --- the nudge: always tells them what to write next --- */
 function nudgeHtml(){
@@ -511,7 +529,11 @@ function draw(i){
   if(!p || p.drawing) return;
   p.drawing=true; p.error='';
   paintPage(i);
-  callScript({action:'illustrate', sentence:p.text, characters:S.characters, quality:'low'},
+  var sofar = S.pages.slice(0,i).map(function(x){ return x.text; }).join(' ');
+  if(S.starter) sofar = S.starter + ' ' + sofar;
+
+  callScript({action:'illustrate', sentence:p.text, characters:S.characters,
+              sofar:sofar.trim(), quality:'low'},
     function(d){
       p.drawing=false;
       p.img = d.url || ('data:image/jpeg;base64,'+d.b64);

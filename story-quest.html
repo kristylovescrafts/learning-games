@@ -385,29 +385,41 @@ function seal(){
   drawAll();
 }
 
-/* Draws every page, one after another, with the finished story as context. */
+/* Page 1 first, then the rest at the same time using it as a look reference. */
 function drawAll(){
   var n=S.pages.length, done=0;
   el.innerHTML='<div class="cover"><h3>'+esc(S.title)+'</h3>'+
     '<span>written by '+esc(S.who)+'</span></div>'+
     '<div id="pages">'+S.pages.map(pg).join('')+'</div>'+
-    '<p id="prog" style="text-align:center;font-weight:800">Drawing picture 1 of '+n+'...</p>';
+    '<p id="prog" style="text-align:center;font-weight:800">Drawing the first picture...</p>';
 
   var whole=(S.starter?'The story began: '+S.starter+' ':'')+
             S.pages.map(function(x){return x.text;}).join(' ');
 
-  function nextOne(i){
-    if(i>=n){ $('prog').outerHTML=''; sealDone(); return; }
+  function tick(){
+    done++;
+    var pr=$('prog');
+    if(pr) pr.textContent='Drawn '+done+' of '+n+'...';
+    if(done>=n){ if(pr) pr.outerHTML=''; sealDone(); }
+  }
+
+  function one(i, ref, after){
     var p=S.pages[i];
-    $('prog').textContent='Drawing picture '+(i+1)+' of '+n+'...';
     p.drawing=true; repaint(i);
     call({action:'illustrate',sentence:p.text,characters:S.characters,
-          premise:S.starter,sofar:whole,wholeStory:true,quality:'low'},
+          premise:S.starter,sofar:whole,ref:ref||'',quality:'low'},
       function(d){ p.drawing=false; p.img=d.url||('data:image/jpeg;base64,'+d.b64);
-        p.fileId=d.fileId||''; save('draft',S); repaint(i); nextOne(i+1); },
-      function(e){ p.drawing=false; p.error=e; repaint(i); nextOne(i+1); });
+        p.fileId=d.fileId||''; save('draft',S); repaint(i); tick(); if(after) after(d.fileId||''); },
+      function(e){ p.drawing=false; p.error=e; repaint(i); tick(); if(after) after(''); });
   }
-  nextOne(0);
+
+  if(!n){ sealDone(); return; }
+
+  one(0, '', function(refId){
+    var pr=$('prog');
+    if(pr && n>1) pr.textContent='Drawing the rest...';
+    for(var i=1;i<n;i++) one(i, refId);   // all at once
+  });
 }
 
 function sealDone(){

@@ -84,6 +84,12 @@ h2{font-size:25px;margin:28px 0 18px;font-weight:800;letter-spacing:-.02em}
   color:var(--soft);cursor:pointer}
 .opt button.on{border-color:var(--ink);background:var(--ink);color:#fff}
 
+#statusbar{position:fixed;left:0;right:0;bottom:0;z-index:99;background:#16233f;
+  color:#fff;font:13px/1.4 ui-monospace,Menlo,monospace;padding:10px 14px;
+  display:none;max-height:38vh;overflow:auto;white-space:pre-wrap}
+#statusbar.bad{background:#8c2f26}
+#statusbar b{color:#f5a524}
+
 @media print{
   .prompt,.q,.mic,.next,.quiet,textarea,.redo,.drawing,.say,button{display:none!important}
   body{background:#fff}.wrap{max-width:none;padding:0}
@@ -95,9 +101,13 @@ h2{font-size:25px;margin:28px 0 18px;font-weight:800;letter-spacing:-.02em}
 </head>
 <body>
 <div class="wrap"><div id="screen"></div></div>
+<div id="statusbar" onclick="this.style.display='none'"></div>
 
 <script>
-var SCRIPT_URL='https://script.google.com/macros/s/AKfycbxKE5odhtYk3P3keJr474PwdVYydBCqzAten8qX3GDT5LRD4E-Wf4aFVvODUuZoL8e4/exec';
+/* The Apps Script web app URL. Set it once in the Grown-ups area; it is
+   remembered on this device. Changing deployments only means pasting a new one. */
+var FALLBACK_URL='https://script.google.com/macros/s/AKfycbxKE5odhtYk3P3keJr474PwdVYydBCqzAten8qX3GDT5LRD4E-Wf4aFVvODUuZoL8e4/exec';
+function scriptUrl(){ return load('url', FALLBACK_URL); }
 
 var STARTERS=[
  "Your pet learned to talk. The first thing it said was...",
@@ -151,6 +161,17 @@ var NUDGES=[
 function tier(n){ return n===0?0 : n<=2?1 : n<=4?2 : 3; }
 
 var S={}, q='';
+
+/* --- visible diagnostics: tells us exactly where things stop --- */
+function status(msg, bad){
+  var b=document.getElementById('statusbar');
+  if(!b) return;
+  b.style.display='block';
+  b.className = bad ? 'bad' : '';
+  b.innerHTML += (b.innerHTML?'\n':'') + msg;
+  b.scrollTop = b.scrollHeight;
+}
+window.onerror=function(m,src,line){ status('<b>JS ERROR</b> line '+line+': '+m, 1); };
 var $=function(i){return document.getElementById(i);};
 var el=$('screen');
 
@@ -161,12 +182,18 @@ function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){
 function pick(a){return a[Math.floor(Math.random()*a.length)];}
 
 function call(payload,ok,bad){
-  fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
+  fetch(scriptUrl(),{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify(payload)})
   .then(function(r){return r.text();})
-  .then(function(t){var d;try{d=JSON.parse(t);}catch(e){bad('Something went wrong.');return;}
-    if(d&&d.ok)ok(d);else bad((d&&d.error)||'Something went wrong.');})
-  .catch(function(){bad('Could not connect. Check the wifi.');});
+  .then(function(t){
+    var d;
+    try{ d=JSON.parse(t); }
+    catch(e){ status('<b>REPLY WAS NOT JSON</b> first 200 chars:\n'+t.slice(0,200),1);
+              bad('Something went wrong.'); return; }
+    if(d&&d.ok) ok(d); else bad((d&&d.error)||'Something went wrong.');
+  })
+  .catch(function(err){ status('<b>NETWORK FAILED</b> '+err,1);
+    bad('Could not connect. Check the wifi.'); });
 }
 
 /* ---------- listening ---------- */
@@ -342,14 +369,21 @@ function redo(i){
 }
 
 function drawIt(i){
-  var p=S.pages[i]; if(!p||p.drawing)return;
+  status('drawIt('+i+') called');
+  var p=S.pages[i];
+  if(!p){ status('<b>STOP</b> no page at index '+i,1); return; }
+  if(p.drawing){ status('<b>STOP</b> already drawing',1); return; }
   p.drawing=true; p.error=''; repaint(i);
+  status('sending page '+(i+1)+' to the script...');
   var sofar=S.pages.slice(0,i).map(function(x){return x.text;}).join(' ').trim();
   call({action:'illustrate',sentence:p.text,characters:S.characters,
         premise:S.starter,sofar:sofar,quality:'low'},
-    function(d){ p.drawing=false; p.img=d.url||('data:image/jpeg;base64,'+d.b64);
+    function(d){ status('picture came back for page '+(i+1)+
+        (d.url?' (drive link)':(d.b64?' (raw image)':' (EMPTY!)')));
+      p.drawing=false; p.img=d.url||('data:image/jpeg;base64,'+d.b64);
       p.fileId=d.fileId||''; save('draft',S); repaint(i); },
-    function(e){ p.drawing=false; p.error=e; save('draft',S); repaint(i); });
+    function(e){ status('<b>FAILED</b> page '+(i+1)+': '+e,1);
+      p.drawing=false; p.error=e; save('draft',S); repaint(i); });
 }
 
 /* ---------- finishing ---------- */
@@ -396,6 +430,11 @@ function grown(){
       '<button class="'+(m==='spell'?'on':'')+'" onclick="setMode(\'spell\')">Say &amp; spell</button>'+
       '<button class="'+(m==='type'?'on':'')+'" onclick="setMode(\'type\')">Type it</button>'+
     '</div></div>'+
+    '<div class="gu"><h4>Script link</h4>'+
+      '<div style="font-size:12px;margin-bottom:9px;color:var(--soft);word-break:break-all">'+
+      esc(scriptUrl().slice(-28))+'</div>'+
+      '<button class="next" style="font-size:15px;padding:12px" onclick="setUrl()">'+
+      'Paste a new link</button></div>'+
     '<div class="gu"><h4>Characters</h4>'+
       '<div style="font-size:15px;margin-bottom:9px;color:var(--soft)">'+
       (S.characters?esc(S.characters):'Not set. Describing them keeps them looking the same in every picture.')+
@@ -409,6 +448,13 @@ function grown(){
     '<button class="quiet" onclick="S.pages.length?story():who()">Back</button>';
 }
 function setMode(m){ save('mode',m); S.mode=m; grown(); }
+function setUrl(){
+  var v=prompt('Paste the /exec URL from Apps Script -> Manage deployments.', scriptUrl());
+  if(v===null) return;
+  v=v.trim();
+  if(v.indexOf('/exec')===-1){ alert('That does not look right - it should end in /exec'); return; }
+  save('url',v); grown();
+}
 function chars(){
   var v=prompt('Who is in the story? Their name and what they look like.',S.characters||'');
   if(v===null)return; S.characters=v.trim(); save('draft',S); grown();

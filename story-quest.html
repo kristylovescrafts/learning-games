@@ -237,7 +237,6 @@ function who(){
   el.innerHTML='<h2>Who is writing?</h2>'+
     '<button class="name" onclick="go(\'Thomas\')">&#128994; Thomas</button>'+
     '<button class="name" onclick="go(\'Tori\')">&#128311; Tori</button>'+
-    '<button class="name" onclick="go(\'Thomas and Tori\')">&#127917; Both of us</button>'+
     '<button class="quiet" onclick="grown()">Grown-ups</button>';
 }
 function go(w){ S.who=w; q=''; story(); }
@@ -394,7 +393,8 @@ function drawAll(){
     '<div id="pages">'+S.pages.map(pg).join('')+'</div>'+
     '<p id="prog" style="text-align:center;font-weight:800">Drawing picture 1 of '+n+'...</p>';
 
-  var whole=S.pages.map(function(x){return x.text;}).join(' ');
+  var whole=(S.starter?'The story began: '+S.starter+' ':'')+
+            S.pages.map(function(x){return x.text;}).join(' ');
 
   function nextOne(i){
     if(i>=n){ $('prog').outerHTML=''; sealDone(); return; }

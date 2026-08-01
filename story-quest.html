@@ -52,6 +52,8 @@ button.go.small{font-size:14px;padding:10px 14px}
 .starter:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
 .starter.flipped{background:var(--card);color:var(--ink);font-size:14px;
   font-weight:700;line-height:1.3;text-align:center;align-content:center}
+.starter.chosen{background:var(--gold);color:var(--ink);border-width:4px}
+.starter.faded{opacity:.55}
 
 .banner{background:#eaf1fb;border:2px solid var(--sky);border-radius:14px;
   padding:12px 14px;margin-bottom:16px;font-size:15px;font-weight:600}
@@ -299,24 +301,21 @@ function newCards(){
 function story(){
   $('lockRow').style.display = S.pages.length ? 'none' : '';
 
-  /* 1. the story starter - always on screen, never a separate step */
-  var head;
-  if(S.starter){
-    head = '<div class="banner"><span class="cap">Your story starts here</span>'+
-      esc(S.starter)+
-      '<div class="row"><button class="go ghost small" onclick="clearStarter()">'+
-      'Pick a different card</button></div></div>';
-  } else {
-    head = '<div class="banner">'+
-      '<span class="cap">Pick a card, or just start writing</span>'+
-      '<div class="cards" style="margin-top:9px">'+
-        S.three.map(function(_,i){
-          return '<button class="starter" id="c'+i+'" onclick="flip('+i+')">?</button>';
-        }).join('')+
-      '</div>'+
-      '<div class="row"><button class="go ghost small" onclick="newCards();story()">'+
-      'Different cards</button></div></div>';
-  }
+  /* 1. the story starter - three cards, always on screen */
+  var head =
+    '<span class="cap" style="font-size:11px;font-weight:800;letter-spacing:.1em;'+
+      'text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:7px">'+
+      (S.starter ? 'Your story starts here' : 'Pick a card, or just start writing')+'</span>'+
+    '<div class="cards">'+
+      S.three.map(function(t,i){
+        var isMine = S.starter && t === S.starter;
+        var cls = 'starter' + (isMine ? ' flipped chosen' : (S.starter ? ' faded' : ''));
+        return '<button class="'+cls+'" id="c'+i+'" onclick="flip('+i+')">'+
+               (isMine ? esc(t) : '?')+'</button>';
+      }).join('')+
+    '</div>'+
+    '<div class="row" style="margin-top:9px"><button class="go ghost small" '+
+      'onclick="newCards();S.starter=\'\';story()">Three new cards</button></div>';
 
   /* 2. characters, directly underneath the starter */
   var chars = S.characters
@@ -341,12 +340,14 @@ function story(){
   composer();
 }
 
-function clearStarter(){ S.starter=''; newCards(); story(); }
 
 function flip(i){
+  if(S.starter === S.three[i]) return;
   var el=$('c'+i);
-  el.classList.add('flipped'); el.textContent=S.three[i]; el.onclick=null;
-  setTimeout(function(){ S.starter=S.three[i]; story(); }, 750);
+  el.classList.remove('faded');
+  el.classList.add('flipped','chosen');
+  el.textContent=S.three[i];
+  setTimeout(function(){ S.starter=S.three[i]; save('draft',S); story(); }, 700);
 }
 
 /* --- the nudge: always tells them what to write next --- */
@@ -407,6 +408,7 @@ function composer(){
       '<div id="msg"></div>'+
       '<textarea id="entry" placeholder="Your words appear here as you talk" '+
         'autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>'+
+      '<div class="hint">Read your words, then add the page.</div>'+
       '<div class="row"><button class="go green" onclick="addPage()">Add this page</button></div>';
   } else if(S.mode==='writer'){
     body = '<button class="mic" id="micBtn" onclick="talkThenType()">&#127908; START talking</button>'+

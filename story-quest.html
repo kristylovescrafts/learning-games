@@ -344,8 +344,9 @@ function redo(i){
 function drawIt(i){
   var p=S.pages[i]; if(!p||p.drawing)return;
   p.drawing=true; p.error=''; repaint(i);
-  var sofar=(S.starter+' '+S.pages.slice(0,i).map(function(x){return x.text;}).join(' ')).trim();
-  call({action:'illustrate',sentence:p.text,characters:S.characters,sofar:sofar,quality:'low'},
+  var sofar=S.pages.slice(0,i).map(function(x){return x.text;}).join(' ').trim();
+  call({action:'illustrate',sentence:p.text,characters:S.characters,
+        premise:S.starter,sofar:sofar,quality:'low'},
     function(d){ p.drawing=false; p.img=d.url||('data:image/jpeg;base64,'+d.b64);
       p.fileId=d.fileId||''; save('draft',S); repaint(i); },
     function(e){ p.drawing=false; p.error=e; save('draft',S); repaint(i); });

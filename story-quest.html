@@ -6,621 +6,423 @@
 <title>Story Quest</title>
 <style>
 :root{
-  --ink:#16233f; --ink-soft:#4a5878;
-  --paper:#fdf8ee; --card:#fff;
-  --gold:#f5a524; --leaf:#2f8f5b; --coral:#e0644f; --sky:#3d7fd6;
-  --line:#e6dfd0; --r:18px;
+  --ink:#16233f; --soft:#6b7794; --paper:#fdf8ee; --card:#fff;
+  --gold:#f5a524; --leaf:#2f8f5b; --coral:#e0644f; --line:#e8e1d2;
   color-scheme:light;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;background:var(--paper);color:var(--ink);
   font:17px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
   -webkit-text-size-adjust:100%}
-.wrap{max-width:620px;margin:0 auto;padding:14px 16px 80px}
+.wrap{max-width:600px;margin:0 auto;padding:0 16px 70px}
 
-.top{display:flex;align-items:center;gap:10px;margin-bottom:16px}
-.top a{text-decoration:none;font-size:23px;background:var(--card);
-  border:2px solid var(--line);border-radius:14px;width:46px;height:46px;
-  display:grid;place-items:center;flex:none;color:inherit}
-.top h1{font-size:21px;margin:0;font-weight:800;letter-spacing:-.02em}
-.top .who{margin-left:auto;font-size:14px;font-weight:700;color:var(--ink-soft)}
+/* pinned story prompt - one quiet line, always there */
+.prompt{position:sticky;top:0;z-index:30;background:var(--paper);
+  margin:0 -16px;padding:13px 16px 11px;border-bottom:1px solid var(--line);
+  font-size:14px;color:var(--soft);cursor:pointer}
+.prompt b{display:block;color:var(--ink);font-size:16px;font-weight:700;margin-top:1px}
 
-h2{font-size:24px;margin:0 0 6px;font-weight:800;letter-spacing:-.02em}
-.lede{color:var(--ink-soft);margin:0 0 18px}
+/* the question - the only loud thing on the page */
+.q{font-size:25px;font-weight:800;line-height:1.25;letter-spacing:-.02em;
+  margin:26px 0 16px;cursor:pointer}
+.q em{font-style:normal;color:var(--soft);font-size:13px;font-weight:700;
+  display:block;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
 
-.pick{display:block;width:100%;text-align:left;cursor:pointer;background:var(--card);
-  border:3px solid var(--ink);border-radius:var(--r);padding:18px;margin-bottom:13px;
-  font:inherit;color:inherit;box-shadow:0 4px 0 var(--ink)}
-.pick:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
-.pick .name{font-size:21px;font-weight:800;display:flex;align-items:center;gap:10px}
-.pick .desc{color:var(--ink-soft);font-size:15px;margin-top:4px}
+/* pages */
+.page{margin:0 0 20px}
+.page p{font-size:18px;margin:0;white-space:pre-wrap}
+.page img{width:100%;border-radius:14px;margin-top:9px;display:block;background:#f1ede3}
+.page .redo{background:none;border:0;color:var(--soft);font:inherit;font-size:13px;
+  text-decoration:underline;padding:6px 0 0;cursor:pointer}
+.drawing{border:1px dashed var(--line);border-radius:14px;padding:20px;
+  text-align:center;color:var(--soft);font-size:14px;margin-top:9px}
 
-button.go{font:inherit;font-weight:800;font-size:17px;cursor:pointer;
-  border:3px solid var(--ink);border-radius:var(--r);background:var(--gold);
-  color:var(--ink);padding:14px 20px;box-shadow:0 4px 0 var(--ink)}
-button.go:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
-button.go.ghost{background:var(--card)}
-button.go.green{background:var(--leaf);color:#fff;border-color:#1d6b41;box-shadow:0 4px 0 #1d6b41}
-button.go.small{font-size:14px;padding:10px 14px}
-.row{display:flex;gap:9px;flex-wrap:wrap;margin-top:12px}
+textarea{width:100%;font:inherit;font-size:20px;padding:15px;border-radius:16px;
+  border:2px solid var(--line);background:var(--card);color:inherit;
+  min-height:96px;resize:none;margin-bottom:13px}
+textarea:focus{outline:none;border-color:var(--ink)}
 
-/* starter cards, shown inline at the top of the story */
-.cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
-.starter{aspect-ratio:2/3;border:3px solid var(--ink);border-radius:var(--r);
-  background:var(--sky);color:#fff;cursor:pointer;font:inherit;display:grid;
-  place-items:center;font-size:34px;box-shadow:0 4px 0 var(--ink);padding:7px}
-.starter:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
-.starter.flipped{background:var(--card);color:var(--ink);font-size:14px;
-  font-weight:700;line-height:1.3;text-align:center;align-content:center}
-.starter.chosen{background:var(--gold);color:var(--ink);border-width:4px}
-.starter.faded{opacity:.55}
-
-.banner{background:#eaf1fb;border:2px solid var(--sky);border-radius:14px;
-  padding:12px 14px;margin-bottom:16px;font-size:15px;font-weight:600}
-.banner .cap{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--sky);display:block;margin-bottom:3px}
-
-/* nudge: the thing that tells them what to write next */
-.nudge{background:var(--gold);border:3px solid var(--ink);border-radius:var(--r);
-  padding:15px 16px;margin:16px 0 12px;box-shadow:0 4px 0 var(--ink)}
-.nudge .cap{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
-  color:#7a5405;display:block;margin-bottom:4px}
-.nudge .q{font-size:20px;font-weight:800;line-height:1.3}
-.nudge button{margin-top:10px;background:rgba(255,255,255,.75);border:2px solid var(--ink);
-  border-radius:12px;font:inherit;font-weight:700;font-size:14px;padding:8px 13px;cursor:pointer}
-
-/* mode switcher lives with the composer, not on its own screen */
-.modes{display:flex;gap:6px;margin-bottom:11px}
-.modes button{flex:1;font:inherit;font-weight:700;font-size:13px;cursor:pointer;
-  padding:11px 5px;border:2px solid var(--line);border-radius:13px;
-  background:var(--card);color:var(--ink-soft);line-height:1.25}
-.modes button.on{border-color:var(--ink);background:var(--ink);color:#fff}
-.modes button span{display:block;font-size:17px;margin-bottom:2px}
-
-.page{background:var(--card);border:2px solid var(--line);border-radius:var(--r);
-  padding:14px;margin-bottom:11px}
-.page .num{font-size:11px;font-weight:800;color:var(--ink-soft);letter-spacing:.08em}
-.page .txt{font-size:18px;margin:4px 0 0;white-space:pre-wrap}
-.page img{width:100%;border-radius:12px;margin-top:10px;display:block;background:#f0ece2}
-.page .tools{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
-
-textarea{width:100%;font:inherit;font-size:19px;padding:14px;border-radius:var(--r);
-  border:3px solid var(--ink);background:var(--card);color:inherit;min-height:92px;resize:none}
-textarea:focus{outline:3px solid var(--gold);outline-offset:2px}
-
-.mic{width:100%;font:inherit;font-weight:800;font-size:19px;cursor:pointer;
-  border:3px solid var(--ink);border-radius:var(--r);background:var(--coral);color:#fff;
-  padding:19px;box-shadow:0 4px 0 #a63f2e;margin-bottom:11px}
+.mic{width:100%;font:inherit;font-weight:800;font-size:20px;cursor:pointer;
+  border:0;border-radius:18px;background:var(--coral);color:#fff;
+  padding:24px;margin-bottom:13px;box-shadow:0 4px 0 #a63f2e}
 .mic:active{transform:translateY(3px);box-shadow:0 1px 0 #a63f2e}
-.mic.listening{background:var(--leaf);box-shadow:0 4px 0 #1d6b41;animation:pulse 1.1s infinite}
-.mic.blue{background:var(--sky);box-shadow:0 4px 0 #2a5c9c}
-@keyframes pulse{50%{filter:brightness(1.18)}}
+.mic.on{background:var(--leaf);box-shadow:0 4px 0 #1d6b41;animation:p 1.1s infinite}
+.mic.blue{background:#3d7fd6;box-shadow:0 4px 0 #2a5c9c}
+@keyframes p{50%{filter:brightness(1.18)}}
 
-.hint{background:#fff6e2;border:2px solid var(--gold);border-radius:14px;padding:11px;
-  font-size:15px;margin:11px 0}
-.err{background:#fdeceb;border:2px solid var(--coral);border-radius:14px;padding:11px;
-  font-size:15px;margin:11px 0}
-.busy{text-align:center;padding:24px;font-weight:700;color:var(--ink-soft)}
+.next{width:100%;font:inherit;font-weight:800;font-size:19px;cursor:pointer;
+  border:0;border-radius:18px;background:var(--leaf);color:#fff;padding:19px;
+  box-shadow:0 4px 0 #1d6b41}
+.next:active{transform:translateY(3px);box-shadow:0 1px 0 #1d6b41}
 
-.cover{background:var(--gold);border:3px solid var(--ink);border-radius:var(--r);
-  padding:26px 20px;text-align:center;box-shadow:0 5px 0 var(--ink);margin-bottom:18px}
-.cover h2{font-size:28px;margin-bottom:8px}
-.cover .by{font-weight:700;color:#6b4a08}
-.gems{font-size:20px;font-weight:800;text-align:center;margin:14px 0}
+.quiet{background:none;border:0;color:var(--soft);font:inherit;font-size:14px;
+  text-decoration:underline;cursor:pointer;padding:14px 0;display:block;
+  margin:0 auto;text-align:center}
 
-.locked{margin-top:36px;text-align:center}
-.locked button{background:none;border:0;color:var(--ink-soft);font:inherit;
-  font-size:13px;text-decoration:underline;cursor:pointer}
+.say{font-size:14px;color:var(--soft);margin-bottom:11px}
+.oops{background:#fdeceb;border-radius:12px;padding:11px;font-size:14px;margin-bottom:11px}
+
+/* name picking */
+.name{display:block;width:100%;text-align:left;cursor:pointer;background:var(--card);
+  border:2px solid var(--ink);border-radius:18px;padding:20px;margin-bottom:12px;
+  font:inherit;font-size:22px;font-weight:800;color:inherit;box-shadow:0 4px 0 var(--ink)}
+.name:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+h2{font-size:25px;margin:28px 0 18px;font-weight:800;letter-spacing:-.02em}
+
+.cover{background:var(--gold);border-radius:18px;padding:30px 20px;text-align:center;
+  margin:20px 0 24px}
+.cover h3{font-size:27px;margin:0 0 7px;font-weight:800}
+.cover span{font-weight:700;color:#6b4a08}
+
+/* grown-ups */
+.gu{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:14px;margin-bottom:11px}
+.gu h4{margin:0 0 9px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--soft)}
+.opt{display:flex;gap:7px}
+.opt button{flex:1;font:inherit;font-weight:700;font-size:14px;padding:12px 6px;
+  border:2px solid var(--line);border-radius:12px;background:var(--card);
+  color:var(--soft);cursor:pointer}
+.opt button.on{border-color:var(--ink);background:var(--ink);color:#fff}
 
 @media print{
-  body{background:#fff}
-  .top,.row,.nudge,.modes,.banner,button,.locked,.gems,textarea{display:none!important}
-  .wrap{max-width:none;padding:0}
-  .page{page-break-inside:avoid;break-inside:avoid;border:0;margin-bottom:26px}
-  .page .num{display:none}
-  .page .txt{font-size:22px;text-align:center;margin-top:12px}
-  .cover{page-break-after:always;border:0;background:none}
+  .prompt,.q,.mic,.next,.quiet,textarea,.redo,.drawing,.say,button{display:none!important}
+  body{background:#fff}.wrap{max-width:none;padding:0}
+  .page{page-break-inside:avoid;margin-bottom:30px}
+  .page p{font-size:22px;text-align:center;margin-top:12px}
+  .cover{page-break-after:always;background:none}
 }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="top">
-    <a href="index.html" title="All games">&#127968;</a>
-    <h1>Story Quest</h1>
-    <span class="who" id="whoTag"></span>
-  </div>
-  <div id="screen"></div>
-  <div class="locked" id="lockRow"><button onclick="grownUp()">Grown-ups</button></div>
-</div>
+<div class="wrap"><div id="screen"></div></div>
 
 <script>
-var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKE5odhtYk3P3keJr474PwdVYydBCqzAten8qX3GDT5LRD4E-Wf4aFVvODUuZoL8e4/exec';
+var SCRIPT_URL='https://script.google.com/macros/s/AKfycbxKE5odhtYk3P3keJr474PwdVYydBCqzAten8qX3GDT5LRD4E-Wf4aFVvODUuZoL8e4/exec';
 
-/* ---------- story starters ---------- */
-var STARTERS = [
-  "Your pet learned to talk. The first thing it said was...",
-  "You found a door in your bedroom that wasn't there yesterday.",
-  "Everyone in town woke up two inches shorter. Except one person.",
-  "A dragon moved in next door and it is very, very shy.",
-  "You found a map inside a library book.",
-  "The school bus took a wrong turn somewhere strange.",
-  "Your shadow started doing things you didn't do.",
-  "A tiny spaceship landed in the cereal bowl.",
-  "You woke up and could understand what birds were saying.",
-  "The last cookie in the jar started talking.",
-  "Someone left a giant egg on the doorstep.",
-  "Your bike can suddenly go anywhere you imagine.",
-  "A snowman knocked on the window at midnight.",
-  "You found a key that opens something surprising.",
-  "Every clock in the house stopped at the same time.",
-  "A cat followed you home and would not leave.",
-  "The tree in the yard grew a door overnight.",
-  "You got a letter with no stamp and no name on it.",
-  "All the socks in the world disappeared. You know why.",
-  "A very small giant needs your help.",
-  "The swimming pool was full of something other than water.",
-  "A robot showed up and thinks you are its owner.",
-  "You found footprints in your room that were not yours.",
-  "A cloud got stuck in the backyard.",
-  "You planted a seed and something unexpected grew.",
-  "The mirror showed somewhere else instead of your room.",
-  "Every animal at the zoo is looking right at you.",
-  "The rain today was a colour rain should not be.",
-  "A paper airplane landed on your desk with a message.",
-  "You can make one thing in the world bigger. Anything.",
-  "The lights went out and something started glowing.",
-  "A bird dropped something shiny at your feet.",
-  "Your grandma told you a secret about the attic.",
-  "You met someone who says they are from the future.",
-  "The ice cream truck plays a song no one has heard before.",
-  "You found a photo of yourself somewhere you've never been."
+var STARTERS=[
+ "Your pet learned to talk. The first thing it said was...",
+ "You found a door in your bedroom that wasn't there yesterday.",
+ "Everyone in town woke up two inches shorter. Except one person.",
+ "A dragon moved in next door and it is very, very shy.",
+ "You found a map inside a library book.",
+ "The school bus took a wrong turn somewhere strange.",
+ "Your shadow started doing things you didn't do.",
+ "A tiny spaceship landed in the cereal bowl.",
+ "You woke up and could understand what birds were saying.",
+ "The last cookie in the jar started talking.",
+ "Someone left a giant egg on the doorstep.",
+ "Your bike can suddenly go anywhere you imagine.",
+ "A snowman knocked on the window at midnight.",
+ "You found a key that opens something surprising.",
+ "Every clock in the house stopped at the same time.",
+ "A cat followed you home and would not leave.",
+ "The tree in the yard grew a door overnight.",
+ "You got a letter with no stamp and no name on it.",
+ "All the socks in the world disappeared. You know why.",
+ "A very small giant needs your help.",
+ "The swimming pool was full of something other than water.",
+ "A robot showed up and thinks you are its owner.",
+ "You found footprints in your room that were not yours.",
+ "A cloud got stuck in the backyard.",
+ "You planted a seed and something unexpected grew.",
+ "The mirror showed somewhere else instead of your room.",
+ "Every animal at the zoo is looking right at you.",
+ "The rain today was a colour rain should not be.",
+ "A paper airplane landed on your desk with a message.",
+ "You can make one thing in the world bigger. Anything.",
+ "The lights went out and something started glowing.",
+ "A bird dropped something shiny at your feet.",
+ "Your grandma told you a secret about the attic.",
+ "You met someone who says they are from the future.",
+ "The ice cream truck plays a song no one has heard before.",
+ "You found a photo of yourself somewhere you've never been."
 ];
 
-/* ---------- nudges: what to write next, by where they are ---------- */
-var NUDGES = [
-  [ "Where are they? What can you see?",
-    "Who is there when the story starts?",
-    "What does it look like? What can you hear?",
-    "Tell me about the very first thing that happens." ],
-  [ "What happened next?",
-    "Who else turned up?",
-    "What did they say to each other?",
-    "Where did they go?",
-    "What did they find?" ],
-  [ "Uh oh. Something goes wrong. What is it?",
-    "Something surprising happens. What?",
-    "What is the tricky part?",
-    "Somebody is in trouble. Who?",
-    "What did they get wrong?" ],
-  [ "How did they feel?",
-    "What did they do about it?",
-    "Who helped them?",
-    "How does your story end?",
-    "What is the very last thing that happens?" ]
+var NUDGES=[
+ ["Where are you? What can you see?","Who is there with you?",
+  "What is the first thing that happens?","What does it look like?"],
+ ["What happened next?","Who else turned up?","What did they say?",
+  "Where did you go?","What did you find?"],
+ ["Uh oh. Something goes wrong. What?","What is the tricky part?",
+  "Something surprising happens. What?","Who is in trouble?"],
+ ["How did you feel?","What did you do about it?","Who helped you?",
+  "How does your story end?","What is the very last thing that happens?"]
 ];
-function nudgeTier(n){ return n === 0 ? 0 : n <= 2 ? 1 : n <= 4 ? 2 : 3; }
+function tier(n){ return n===0?0 : n<=2?1 : n<=4?2 : 3; }
 
-var S = {}, lastNudge = '';
-var $ = function(id){ return document.getElementById(id); };
-var screenEl = $('screen');
+var S={}, q='';
+var $=function(i){return document.getElementById(i);};
+var el=$('screen');
 
-function save(k,v){ try{ localStorage.setItem('sq_'+k, JSON.stringify(v)); }catch(e){} }
-function load(k,d){ try{ var v=localStorage.getItem('sq_'+k); return v?JSON.parse(v):d; }catch(e){ return d; } }
-function esc(s){ return String(s||'').replace(/[&<>"]/g,function(c){
-  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-function pickFrom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function save(k,v){try{localStorage.setItem('sq_'+k,JSON.stringify(v));}catch(e){}}
+function load(k,d){try{var v=localStorage.getItem('sq_'+k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
 
-function callScript(payload, done, fail){
-  fetch(SCRIPT_URL,{method:'POST',
-    headers:{'Content-Type':'text/plain;charset=utf-8'},
+function call(payload,ok,bad){
+  fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},
     body:JSON.stringify(payload)})
-  .then(function(r){ return r.text(); })
-  .then(function(t){
-    var d; try{ d=JSON.parse(t); }catch(e){ fail('The answer came back scrambled.'); return; }
-    if(d && d.ok) done(d); else fail((d&&d.error)||'Something went wrong.');
-  })
-  .catch(function(){ fail('Could not reach the picture maker. Check the wifi.'); });
+  .then(function(r){return r.text();})
+  .then(function(t){var d;try{d=JSON.parse(t);}catch(e){bad('Something went wrong.');return;}
+    if(d&&d.ok)ok(d);else bad((d&&d.error)||'Something went wrong.');})
+  .catch(function(){bad('Could not connect. Check the wifi.');});
 }
 
 /* ---------- listening ---------- */
-var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-var rec=null, wantListening=false, heardSoFar='', cbLive, cbDone, cbFail;
-function canListen(){ return !!SR; }
-
-function startListening(live, done, fail){
-  if(!SR){ fail('This device cannot listen. You can type instead.'); return; }
-  heardSoFar=''; wantListening=true; cbLive=live; cbDone=done; cbFail=fail;
-  spinUp();
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition, rec=null;
+var on=false, heard='', fLive, fDone, fBad;
+function canHear(){return !!SR;}
+function hear(live,done,bad){
+  if(!SR){bad('This device cannot listen.');return;}
+  heard=''; on=true; fLive=live; fDone=done; fBad=bad; spin();
 }
-function spinUp(){
+function spin(){
   try{
-    rec = new SR();
-    rec.lang='en-US'; rec.continuous=true; rec.interimResults=true;
+    rec=new SR(); rec.lang='en-US'; rec.continuous=true; rec.interimResults=true;
     rec.onresult=function(e){
-      var interim='';
+      var mid='';
       for(var i=e.resultIndex;i<e.results.length;i++){
         var t=e.results[i][0].transcript;
-        if(e.results[i].isFinal) heardSoFar += (heardSoFar?' ':'') + t.trim();
-        else interim += t;
+        if(e.results[i].isFinal) heard+=(heard?' ':'')+t.trim(); else mid+=t;
       }
-      if(cbLive) cbLive(heardSoFar + (interim ? (heardSoFar?' ':'')+interim : ''));
+      if(fLive) fLive(heard+(mid?(heard?' ':'')+mid:''));
     };
     rec.onerror=function(e){
       if(e.error==='not-allowed'||e.error==='service-not-allowed'){
-        wantListening=false;
-        cbFail('The microphone is switched off. A grown-up can turn it on in Settings.');
+        on=false; fBad('The microphone is switched off. Ask a grown-up.');
       }
     };
-    rec.onend=function(){
-      if(wantListening){ setTimeout(function(){ if(wantListening) spinUp(); },250); }
-      else if(cbDone) cbDone(heardSoFar);
-    };
+    rec.onend=function(){ if(on){setTimeout(function(){if(on)spin();},250);} else if(fDone) fDone(heard); };
     rec.start();
-  }catch(err){ wantListening=false; cbFail('The microphone would not start.'); }
+  }catch(err){ on=false; fBad('The microphone would not start.'); }
 }
-function stopListening(){ wantListening=false; if(rec){ try{ rec.stop(); }catch(e){} } }
-
-function speak(text){
-  try{
-    speechSynthesis.cancel();
-    var u=new SpeechSynthesisUtterance(text);
-    u.rate=0.8; u.pitch=1.05;
-    speechSynthesis.speak(u);
-  }catch(e){}
-}
+function halt(){ on=false; if(rec){try{rec.stop();}catch(e){}} }
+function speak(t){try{speechSynthesis.cancel();
+  var u=new SpeechSynthesisUtterance(t);u.rate=.8;u.pitch=1.05;speechSynthesis.speak(u);}catch(e){}}
 
 /* ============================================================
-   Screen 1 - the only gate. One tap.
+   Who is writing
    ============================================================ */
-function screenWho(){
-  S = { pages:[], spelling:[], characters:'', starter:'',
-        mode: canListen() ? 'storyteller' : 'author' };
-  $('whoTag').textContent=''; $('lockRow').style.display='';
-  screenEl.innerHTML =
-    '<h2>Who is writing today?</h2>'+
-    '<p class="lede">Tap your name and start your book.</p>'+
-    '<button class="pick" onclick="setWho(\'Thomas\')"><div class="name">&#128994; Thomas</div></button>'+
-    '<button class="pick" onclick="setWho(\'Tori\')"><div class="name">&#128311; Tori</div></button>'+
-    '<button class="pick" onclick="setWho(\'Thomas and Tori\')">'+
-      '<div class="name">&#127917; Both of us</div>'+
-      '<div class="desc">Take turns, one page each.</div></button>';
+function who(){
+  S={pages:[],spelling:[],characters:'',starter:pick(STARTERS),
+     mode:load('mode', canHear()?'talk':'type')};
+  el.innerHTML='<h2>Who is writing?</h2>'+
+    '<button class="name" onclick="go(\'Thomas\')">&#128994; Thomas</button>'+
+    '<button class="name" onclick="go(\'Tori\')">&#128311; Tori</button>'+
+    '<button class="name" onclick="go(\'Thomas and Tori\')">&#127917; Both of us</button>'+
+    '<button class="quiet" onclick="grown()">Grown-ups</button>';
 }
-function setWho(w){ S.who=w; $('whoTag').textContent=w; newCards(); story(); }
+function go(w){ S.who=w; q=''; story(); }
 
 /* ============================================================
-   Screen 2 - everything else happens here
+   The whole app: prompt, pages, one question, one button
    ============================================================ */
-function newCards(){
-  var pool = STARTERS.slice(); S.three=[];
-  while(S.three.length<3 && pool.length){
-    S.three.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
-  }
-}
-
 function story(){
-  $('lockRow').style.display = S.pages.length ? 'none' : '';
+  if(!q) q=pick(NUDGES[tier(S.pages.length)]);
 
-  /* 1. the story starter - three cards, always on screen */
-  var head =
-    '<span class="cap" style="font-size:11px;font-weight:800;letter-spacing:.1em;'+
-      'text-transform:uppercase;color:var(--ink-soft);display:block;margin-bottom:7px">'+
-      (S.starter ? 'Your story starts here' : 'Pick a card, or just start writing')+'</span>'+
-    '<div class="cards">'+
-      S.three.map(function(t,i){
-        var isMine = S.starter && t === S.starter;
-        var cls = 'starter' + (isMine ? ' flipped chosen' : (S.starter ? ' faded' : ''));
-        return '<button class="'+cls+'" id="c'+i+'" onclick="flip('+i+')">'+
-               (isMine ? esc(t) : '?')+'</button>';
-      }).join('')+
-    '</div>'+
-    '<div class="row" style="margin-top:9px"><button class="go ghost small" '+
-      'onclick="newCards();S.starter=\'\';story()">Three new cards</button></div>';
+  el.innerHTML=
+    '<div class="prompt" onclick="newPrompt()">Your story starts here'+
+      '<b>'+esc(S.starter)+'</b></div>'+
+    '<div id="pages">'+S.pages.map(pg).join('')+'</div>'+
+    '<div class="q" onclick="newQ()"><em>Page '+(S.pages.length+1)+'</em>'+esc(q)+'</div>'+
+    '<div id="box"></div>'+
+    (S.pages.length>1?'<button class="quiet" onclick="done()">I have finished my book</button>':'')+
+    '<button class="quiet" onclick="grown()">Grown-ups</button>';
 
-  /* 2. characters, directly underneath the starter */
-  var chars = S.characters
-    ? '&#128100; '+esc(S.characters.length>44 ? S.characters.slice(0,44)+'...' : S.characters)
-    : '&#128100; Who is in my story?';
-  var whoBtn = '<div class="row" style="margin-top:-4px;margin-bottom:16px">'+
-    '<button class="go ghost small" onclick="askChars()">'+chars+'</button></div>';
-
-  var turn = (S.who==='Thomas and Tori')
-    ? '<div class="hint">'+(S.pages.length%2===0?'Thomas':'Tori')+"'s turn</div>" : '';
-
-  /* 3. pages, 4. what to write next, 5. writing box, 6. finish */
-  screenEl.innerHTML =
-    head + whoBtn +
-    '<div id="pages">'+ S.pages.map(pageHtml).join('') +'</div>'+
-    nudgeHtml() + turn +
-    '<div id="composer"></div>'+
-    (S.pages.length
-      ? '<div class="row"><button class="go" onclick="screenFinish()">Finish my book</button></div>'
-      : '');
-
-  composer();
+  box();
 }
 
-
-function flip(i){
-  if(S.starter === S.three[i]) return;
-  var el=$('c'+i);
-  el.classList.remove('faded');
-  el.classList.add('flipped','chosen');
-  el.textContent=S.three[i];
-  setTimeout(function(){ S.starter=S.three[i]; save('draft',S); story(); }, 700);
+function newPrompt(){
+  if(S.pages.length) return;              // only before they have started
+  S.starter=pick(STARTERS); story();
+}
+function newQ(){
+  var t=NUDGES[tier(S.pages.length)], n=q, g=0;
+  while(n===q&&g++<12) n=pick(t);
+  q=n; story();
 }
 
-/* --- the nudge: always tells them what to write next --- */
-function nudgeHtml(){
-  var tier = NUDGES[nudgeTier(S.pages.length)];
-  if(!lastNudge || tier.indexOf(lastNudge)===-1) lastNudge = pickFrom(tier);
-  return '<div class="nudge">'+
-    '<span class="cap">'+(S.pages.length?'Page '+(S.pages.length+1):'Page 1')+'</span>'+
-    '<div class="q">'+esc(lastNudge)+'</div>'+
-    '<button onclick="reNudge()">Ask me something else</button></div>';
+function pg(p,i){
+  var art = p.drawing ? '<div class="drawing">&#127912; drawing this picture...</div>'
+          : p.img ? '<img src="'+p.img+'" alt="">' : '';
+  return '<div class="page"><p>'+esc(p.text)+'</p>'+art+
+    (p.error?'<div class="oops">'+esc(p.error)+'</div>':'')+
+    (p.drawing?'':'<button class="redo" onclick="redo('+i+')">change my words</button>')+
+    '</div>';
 }
-function reNudge(){
-  var tier = NUDGES[nudgeTier(S.pages.length)], n=lastNudge, guard=0;
-  while(n===lastNudge && guard++<12) n = pickFrom(tier);
-  lastNudge = n; story();
-}
-
-/* --- pages --- */
-function pageHtml(p,i){
-  var art = p.drawing
-      ? '<div class="busy">&#127912; Drawing this page...<br>'+
-        '<span style="font-weight:400;font-size:14px">Keep writing, it will appear here.</span></div>'
-      : (p.img ? '<img src="'+p.img+'" alt="">' : '');
-  var tools = p.drawing ? ''
-    : '<div class="tools">'+
-        (p.img ? '<button class="go ghost small" onclick="editPage('+i+')">Change my words</button>'
-               : '<button class="go small" onclick="draw('+i+')">&#127912; Draw this page</button>')+
-        '<button class="go ghost small" onclick="removePage('+i+')">Delete</button>'+
-      '</div>';
-  return '<div class="page"><div class="num">PAGE '+(i+1)+'</div>'+
-    '<p class="txt">'+esc(p.text)+'</p>'+ art +
-    (p.error ? '<div class="err">'+esc(p.error)+'</div>' : '') + tools + '</div>';
+function repaint(i){
+  var h=$('pages'); if(!h||!h.children[i])return;
+  var t=document.createElement('div'); t.innerHTML=pg(S.pages[i],i);
+  h.replaceChild(t.firstChild,h.children[i]);
 }
 
-/* Repaints one page only, so drawing never disturbs what they are typing. */
-function paintPage(i){
-  var host=$('pages');
-  if(!host || !host.children[i]) return;
-  var tmp=document.createElement('div');
-  tmp.innerHTML=pageHtml(S.pages[i],i);
-  host.replaceChild(tmp.firstChild, host.children[i]);
-}
-
-/* --- composer, with the mode switcher built in --- */
-function composer(){
-  var mic = canListen();
-  var modes = '<div class="modes">'+
-    (mic?'<button class="'+(S.mode==='storyteller'?'on':'')+'" onclick="setMode(\'storyteller\')">'+
-      '<span>&#127908;</span>Talk it</button>':'')+
-    (mic?'<button class="'+(S.mode==='writer'?'on':'')+'" onclick="setMode(\'writer\')">'+
-      '<span>&#9997;&#65039;</span>Say &amp; spell</button>':'')+
-    '<button class="'+(S.mode==='author'?'on':'')+'" onclick="setMode(\'author\')">'+
-      '<span>&#128218;</span>Type it</button></div>';
-
-  var body;
-  if(S.mode==='storyteller'){
-    body = '<button class="mic" id="micBtn" onclick="talkStory()">&#127908; START talking</button>'+
-      '<div id="msg"></div>'+
-      '<textarea id="entry" placeholder="Your words appear here as you talk" '+
+/* one control: talk, or type. Set by a grown-up, never chosen by the child. */
+function box(){
+  var b=$('box');
+  if(S.mode==='talk'){
+    b.innerHTML='<button class="mic" id="m" onclick="talk()">&#127908; START talking</button>'+
+      '<div id="say"></div>'+
+      '<textarea id="e" placeholder="your words appear here" '+
         'autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>'+
-      '<div class="hint">Read your words, then add the page.</div>'+
-      '<div class="row"><button class="go green" onclick="addPage()">Add this page</button></div>';
-  } else if(S.mode==='writer'){
-    body = '<button class="mic" id="micBtn" onclick="talkThenType()">&#127908; START talking</button>'+
-      '<div id="msg"></div>';
+      '<button class="next" onclick="add()">Next page &rarr;</button>';
+  } else if(S.mode==='spell'){
+    b.innerHTML='<button class="mic" id="m" onclick="sayFirst()">&#127908; START talking</button>'+
+      '<div id="say"></div>';
   } else {
-    body = '<textarea id="entry" placeholder="Write the next part" '+
+    b.innerHTML='<textarea id="e" placeholder="write what happens" '+
         'autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>'+
-      '<div id="msg"></div>'+
-      '<div class="row"><button class="go green" onclick="addPage()">Add this page</button></div>';
+      '<div id="say"></div>'+
+      '<button class="next" onclick="add()">Next page &rarr;</button>';
   }
-  $('composer').innerHTML = modes + body;
 }
-function setMode(m){ stopListening(); S.mode=m; S.heard=''; composer(); }
+function say(t,bad){var s=$('say'); if(s) s.innerHTML=t?'<div class="'+(bad?'oops':'say')+'">'+t+'</div>':'';}
 
-function msg(html,kind){
-  var m=$('msg'); if(!m) return;
-  m.innerHTML = html ? '<div class="'+(kind||'hint')+'">'+html+'</div>' : '';
-}
-
-var micBase='';
-function talkStory(){
-  var btn=$('micBtn');
-  if(wantListening){ stopListening(); return; }
-  micBase = ($('entry').value||'').trim();
-  btn.classList.add('listening'); btn.innerHTML='&#9209;&#65039; STOP';
-  msg('Take as long as you like. It waits for you.');
-  startListening(
-    function(live){ $('entry').value = (micBase?micBase+' ':'')+live; },
-    function(){ btn.classList.remove('listening'); btn.innerHTML='&#127908; START talking'; msg(''); },
-    function(err){ btn.classList.remove('listening'); btn.innerHTML='&#127908; START talking'; msg(err,'err'); }
-  );
+var base='';
+function talk(){
+  var m=$('m');
+  if(on){halt();return;}
+  base=($('e').value||'').trim();
+  m.classList.add('on'); m.innerHTML='&#9209;&#65039; STOP';
+  say('Take as long as you like.');
+  hear(function(l){ $('e').value=(base?base+' ':'')+l; },
+       function(){ m.classList.remove('on'); m.innerHTML='&#127908; START talking'; say(''); },
+       function(e){ m.classList.remove('on'); m.innerHTML='&#127908; START talking'; say(e,1); });
 }
 
-function talkThenType(){
-  var btn=$('micBtn');
-  if(wantListening){ stopListening(); return; }
-  btn.classList.add('listening'); btn.innerHTML='&#9209;&#65039; STOP';
-  msg('Say your whole sentence, then tap STOP.');
-  startListening(
-    function(live){
-      var n = live.trim()?live.trim().split(/\s+/).length:0;
-      msg('Heard '+n+' word'+(n===1?'':'s')+'. Tap STOP when you have finished.');
+function sayFirst(){
+  var m=$('m');
+  if(on){halt();return;}
+  m.classList.add('on'); m.innerHTML='&#9209;&#65039; STOP';
+  say('Say your sentence, then tap STOP.');
+  hear(function(l){ var n=l.trim()?l.trim().split(/\s+/).length:0;
+        say('heard '+n+' word'+(n===1?'':'s')); },
+    function(t){
+      m.classList.remove('on'); m.innerHTML='&#127908; START talking';
+      S.heard=(t||'').trim();
+      if(!S.heard){say('I did not catch that.',1);return;}
+      spellIt();
     },
-    function(text){
-      btn.classList.remove('listening'); btn.innerHTML='&#127908; START talking';
-      S.heard=(text||'').trim();
-      if(!S.heard){ msg('I did not catch that. Try again.','err'); return; }
-      typeItOut();
-    },
-    function(err){
-      btn.classList.remove('listening'); btn.innerHTML='&#127908; START talking';
-      msg(err,'err');
-    }
-  );
+    function(e){ m.classList.remove('on'); m.innerHTML='&#127908; START talking'; say(e,1); });
+}
+function spellIt(){
+  var h=S.heard;
+  $('box').innerHTML=
+    '<button class="mic blue" onclick="speak(S.heard)">&#128266; play it again</button>'+
+    '<textarea id="e" placeholder="type what you hear" autocapitalize="off" '+
+      'autocorrect="off" spellcheck="false" autocomplete="off"></textarea>'+
+    '<div id="say"></div>'+
+    '<button class="next" onclick="add()">Next page &rarr;</button>';
+  setTimeout(function(){speak(h);},350);
 }
 
-function typeItOut(){
-  var heard=S.heard;
-  $('composer').innerHTML =
-    '<div class="hint">Listen, then spell it yourself. Play it as many times as you want.</div>'+
-    '<button class="mic blue" onclick="speak(S.heard)">&#128266; Play it again</button>'+
-    '<textarea id="entry" placeholder="Type what you hear" '+
-      'autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off"></textarea>'+
-    '<div id="msg"></div>'+
-    '<div class="row"><button class="go green" onclick="addPage()">Add this page</button>'+
-    '<button class="go ghost small" onclick="composer()">Start over</button></div>';
-  setTimeout(function(){ speak(heard); },350);
-}
+function add(){
+  var b=$('e'); if(!b)return;
+  var t=(b.value||'').trim();
+  if(!t){say('write something first',1);return;}
 
-function addPage(){
-  var box=$('entry'); if(!box) return;
-  var text=(box.value||'').trim();
-  if(!text){ msg('Write something first!','err'); return; }
-
-  if(S.mode==='writer' && S.heard){
-    var said=S.heard.toLowerCase().replace(/[.,!?;:"']/g,'').split(/\s+/);
-    var typed=text.toLowerCase().replace(/[.,!?;:"']/g,'').split(/\s+/);
-    said.forEach(function(w,i){
-      if(!w) return;
-      S.spelling.push({said:w, typed:typed[i]||'', ok:(typed[i]||'')===w});
-    });
+  if(S.mode==='spell'&&S.heard){
+    var a=S.heard.toLowerCase().replace(/[.,!?;:"']/g,'').split(/\s+/);
+    var c=t.toLowerCase().replace(/[.,!?;:"']/g,'').split(/\s+/);
+    a.forEach(function(w,i){ if(w) S.spelling.push({said:w,typed:c[i]||'',ok:(c[i]||'')===w}); });
     S.heard='';
   }
 
-  S.pages.push({text:text,img:'',fileId:''});
-  var justAdded = S.pages.length-1;
-  lastNudge='';                 // fresh question for the next page
-  save('draft',S);
-  story();
-  draw(justAdded);              // draws in the background while they carry on
-  window.scrollTo(0,document.body.scrollHeight);
+  S.pages.push({text:t,img:'',fileId:''});
+  var i=S.pages.length-1;
+  q=''; save('draft',S); story(); drawIt(i);
+  var d=$('box'); if(d) d.scrollIntoView({block:'center'});
 }
 
-function removePage(i){
-  if(!confirm('Delete page '+(i+1)+'?')) return;
-  S.pages.splice(i,1); save('draft',S); story();
-}
-
-function editPage(i){
+function redo(i){
   var p=S.pages[i];
-  var t=prompt('Change your words and the picture will be drawn again.\n\n'+
-    'Tip: more describing words make a better picture.', p.text);
-  if(t===null) return;
-  t=t.trim(); if(!t) return;
-  p.text=t; p.img=''; p.fileId='';
-  save('draft',S); story(); draw(i);
+  var t=prompt('Change your words and the picture will be drawn again.',p.text);
+  if(t===null)return; t=t.trim(); if(!t)return;
+  p.text=t; p.img=''; p.fileId=''; save('draft',S); story(); drawIt(i);
 }
 
-function askChars(){
-  var v=prompt('Who is in your story?\n\n'+
-    'Write their name and what they look like, and they will look '+
-    'the same in every picture.',
-    S.characters||'');
-  if(v===null) return;
-  S.characters=v.trim(); save('draft',S); story();
-}
-
-function draw(i){
-  var p=S.pages[i];
-  if(!p || p.drawing) return;
-  p.drawing=true; p.error='';
-  paintPage(i);
-  var sofar = S.pages.slice(0,i).map(function(x){ return x.text; }).join(' ');
-  if(S.starter) sofar = S.starter + ' ' + sofar;
-
-  callScript({action:'illustrate', sentence:p.text, characters:S.characters,
-              sofar:sofar.trim(), quality:'low'},
-    function(d){
-      p.drawing=false;
-      p.img = d.url || ('data:image/jpeg;base64,'+d.b64);
-      p.fileId = d.fileId||'';
-      save('draft',S); paintPage(i);
-    },
-    function(err){
-      p.drawing=false; p.error=err;
-      save('draft',S); paintPage(i);
-    });
+function drawIt(i){
+  var p=S.pages[i]; if(!p||p.drawing)return;
+  p.drawing=true; p.error=''; repaint(i);
+  var sofar=(S.starter+' '+S.pages.slice(0,i).map(function(x){return x.text;}).join(' ')).trim();
+  call({action:'illustrate',sentence:p.text,characters:S.characters,sofar:sofar,quality:'low'},
+    function(d){ p.drawing=false; p.img=d.url||('data:image/jpeg;base64,'+d.b64);
+      p.fileId=d.fileId||''; save('draft',S); repaint(i); },
+    function(e){ p.drawing=false; p.error=e; save('draft',S); repaint(i); });
 }
 
 /* ---------- finishing ---------- */
-function screenFinish(){
-  stopListening();
-  screenEl.innerHTML =
-    '<h2>What is your book called?</h2>'+
-    '<p class="lede">Every book needs a title.</p>'+
-    '<textarea id="title" style="min-height:58px" placeholder="My book is called..." '+
+function done(){
+  halt();
+  el.innerHTML='<h2>What is your book called?</h2>'+
+    '<textarea id="t" style="min-height:64px" placeholder="my book is called..." '+
       'autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>'+
-    '<div id="msg"></div>'+
-    '<div class="row"><button class="go green" onclick="finish()">Finish it!</button>'+
-    '<button class="go ghost" onclick="story()">Keep writing</button></div>';
+    '<div id="say"></div>'+
+    '<button class="next" onclick="seal()">Finish it!</button>'+
+    '<button class="quiet" onclick="story()">keep writing</button>';
 }
-
-function finish(){
-  var t=($('title').value||'').trim();
-  if(!t){ msg('Give it a title first!','err'); return; }
+function seal(){
+  var t=($('t').value||'').trim();
+  if(!t){say('give it a title first',1);return;}
   S.title=t;
-  var gems=load('gems',0)+5+S.pages.length; save('gems',gems);
-  var shelf=load('shelf',[]);
-  shelf.unshift({title:S.title,who:S.who,when:Date.now(),pages:S.pages,mode:S.mode});
-  save('shelf',shelf.slice(0,40));
-  callScript({action:'saveBook',who:S.who,title:S.title,mode:S.mode,
-    pages:S.pages,spelling:S.spelling}, function(){}, function(){});
-  try{ localStorage.removeItem('sq_draft'); }catch(e){}
-  showBook(gems);
+  var g=load('gems',0)+5+S.pages.length; save('gems',g);
+  var sh=load('shelf',[]);
+  sh.unshift({title:t,who:S.who,when:Date.now(),pages:S.pages});
+  save('shelf',sh.slice(0,40));
+  call({action:'saveBook',who:S.who,title:t,mode:S.mode,pages:S.pages,spelling:S.spelling},
+    function(){},function(){});
+  try{localStorage.removeItem('sq_draft');}catch(e){}
+  book(g);
 }
-
-function showBook(gems){
-  $('lockRow').style.display='';
-  screenEl.innerHTML =
-    '<div class="cover"><h2>'+esc(S.title)+'</h2>'+
-      '<div class="by">written by '+esc(S.who)+'</div></div>'+
-    S.pages.map(function(p){
-      return '<div class="page">'+(p.img?'<img src="'+p.img+'" alt="">':'')+
-        '<p class="txt">'+esc(p.text)+'</p></div>';
-    }).join('')+
-    '<div class="gems">&#128142; '+gems+' gems</div>'+
-    '<div class="row"><button class="go" onclick="window.print()">&#128424; Print my book</button>'+
-    '<button class="go green" onclick="screenWho()">Write another</button></div>';
+function book(g){
+  el.innerHTML='<div class="cover"><h3>'+esc(S.title)+'</h3>'+
+    '<span>written by '+esc(S.who)+'</span></div>'+
+    S.pages.map(function(p){return '<div class="page">'+
+      (p.img?'<img src="'+p.img+'" alt="">':'')+'<p>'+esc(p.text)+'</p></div>';}).join('')+
+    '<p style="text-align:center;font-weight:800">&#128142; '+g+' gems</p>'+
+    '<button class="next" onclick="window.print()">&#128424; Print my book</button>'+
+    '<button class="quiet" onclick="who()">write another</button>';
   window.scrollTo(0,0);
 }
 
 /* ---------- grown-ups ---------- */
-function grownUp(){
+function grown(){
   if(prompt('Grown-up code')!=='1921') return;
-  var shelf=load('shelf',[]);
-  screenEl.innerHTML =
-    '<h2>Grown-ups</h2>'+
-    '<p class="lede">'+shelf.length+' book'+(shelf.length===1?'':'s')+
-    ' on this device. Everything is also in your Google Sheet.</p>'+
-    shelf.map(function(b,i){
-      return '<button class="pick" onclick="openSaved('+i+')">'+
-        '<div class="name" style="font-size:18px">'+esc(b.title)+'</div>'+
-        '<div class="desc">'+esc(b.who)+' &middot; '+b.pages.length+' pages &middot; '+
-        new Date(b.when).toLocaleDateString()+'</div></button>';
-    }).join('')+
-    '<div class="row"><button class="go ghost small" onclick="screenWho()">Back</button></div>';
+  var m=load('mode','talk'), sh=load('shelf',[]);
+  el.innerHTML='<h2>Grown-ups</h2>'+
+    '<div class="gu"><h4>How they write</h4><div class="opt">'+
+      '<button class="'+(m==='talk'?'on':'')+'" onclick="setMode(\'talk\')">Talk it</button>'+
+      '<button class="'+(m==='spell'?'on':'')+'" onclick="setMode(\'spell\')">Say &amp; spell</button>'+
+      '<button class="'+(m==='type'?'on':'')+'" onclick="setMode(\'type\')">Type it</button>'+
+    '</div></div>'+
+    '<div class="gu"><h4>Characters</h4>'+
+      '<div style="font-size:15px;margin-bottom:9px;color:var(--soft)">'+
+      (S.characters?esc(S.characters):'Not set. Describing them keeps them looking the same in every picture.')+
+      '</div>'+
+      '<button class="next" style="font-size:15px;padding:12px" onclick="chars()">Describe them</button>'+
+    '</div>'+
+    '<div class="gu"><h4>'+sh.length+' book'+(sh.length===1?'':'s')+' saved here</h4>'+
+      sh.map(function(b,i){return '<button class="quiet" style="text-align:left;margin:0" '+
+        'onclick="open_('+i+')">'+esc(b.title)+' &middot; '+esc(b.who)+'</button>';}).join('')+
+    '</div>'+
+    '<button class="quiet" onclick="S.pages.length?story():who()">Back</button>';
 }
-function openSaved(i){ S=load('shelf',[])[i]; showBook(load('gems',0)); }
+function setMode(m){ save('mode',m); S.mode=m; grown(); }
+function chars(){
+  var v=prompt('Who is in the story? Their name and what they look like.',S.characters||'');
+  if(v===null)return; S.characters=v.trim(); save('draft',S); grown();
+}
+function open_(i){ var b=load('shelf',[])[i]; S.title=b.title; S.who=b.who; S.pages=b.pages; book(load('gems',0)); }
 
 /* ---------- start ---------- */
 (function(){
   var d=load('draft',null);
-  if(d && d.pages && d.pages.length){
-    S=d; if(!S.three) newCards();
-    $('whoTag').textContent=d.who||'';
-    screenEl.innerHTML =
-      '<h2>You have a book on the go</h2>'+
-      '<p class="lede">'+esc(d.who)+' was writing something with '+d.pages.length+
-      ' page'+(d.pages.length===1?'':'s')+'.</p>'+
-      '<div class="row"><button class="go green" onclick="story()">Keep going</button>'+
-      '<button class="go ghost" onclick="screenWho()">Start a new one</button></div>';
-  } else { screenWho(); }
+  if(d&&d.pages&&d.pages.length){
+    S=d; if(!S.starter)S.starter=pick(STARTERS); if(!S.mode)S.mode=load('mode','talk');
+    el.innerHTML='<h2>'+esc(d.who)+', you have a book going</h2>'+
+      '<button class="next" onclick="story()">Keep writing</button>'+
+      '<button class="quiet" onclick="who()">Start a new one</button>';
+  } else who();
 })();
 </script>
 </body>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Picture test</title>
+<style>
+  :root { color-scheme: light; }
+  body {
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    max-width: 640px; margin: 0 auto; padding: 20px 16px 60px;
+    background: #fbfbfd; color: #1c1c22;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #6b6b76; margin: 0 0 24px; font-size: 14px; }
+  fieldset { border: 1px solid #ddd; border-radius: 10px; padding: 14px; margin: 0 0 16px; background: #fff; }
+  legend { font-weight: 600; font-size: 14px; padding: 0 6px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
+  input[type=text] {
+    width: 100%; box-sizing: border-box; padding: 10px;
+    border: 1px solid #ccc; border-radius: 8px; font-size: 16px;
+  }
+  button {
+    font-size: 15px; font-weight: 600; padding: 11px 16px; margin: 10px 8px 0 0;
+    border: 0; border-radius: 8px; background: #2f6fed; color: #fff; cursor: pointer;
+  }
+  button.alt { background: #444; }
+  button:disabled { opacity: .5; cursor: default; }
+  #log {
+    font: 13px/1.45 ui-monospace, Menlo, Consolas, monospace;
+    white-space: pre-wrap; word-break: break-word;
+    background: #14141a; color: #d8d8e0; padding: 12px;
+    border-radius: 8px; min-height: 60px; margin-top: 14px;
+  }
+  .panel { border: 1px solid #ddd; border-radius: 10px; padding: 12px; margin: 0 0 12px; background: #fff; }
+  .panel h3 { font-size: 14px; margin: 0 0 2px; }
+  .panel p { font-size: 13px; color: #6b6b76; margin: 0 0 10px; }
+  .verdict { font-weight: 700; font-size: 14px; }
+  .pass { color: #1a7f45; }
+  .fail { color: #c0342b; }
+  .wait { color: #8a6d0b; }
+  .panel img { width: 100%; border-radius: 8px; display: block; background: #f0f0f4; }
+</style>
+</head>
+<body>
+
+<h1>Picture test</h1>
+<p class="sub">Checks three things: that the script can reach OpenAI, that the picture comes back, and which way of showing it actually works on this device.</p>
+
+<fieldset>
+  <legend>Setup</legend>
+  <label for="url">Your Apps Script /exec URL</label>
+  <input type="text" id="url" placeholder="https://script.google.com/macros/s/.../exec" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <button id="health" class="alt">Check the script is awake</button>
+</fieldset>
+
+<fieldset>
+  <legend>Make a picture</legend>
+  <label for="sentence">Sentence</label>
+  <input type="text" id="sentence" value="A small purple dragon eating pancakes on the roof of a house">
+  <button id="goPost">Try method A (POST)</button>
+  <button id="goJsonp" class="alt">Try method B (JSONP)</button>
+  <div id="log">Ready. Paste your URL above, then check the script is awake.</div>
+</fieldset>
+
+<div id="results"></div>
+
+<script>
+(function () {
+  var urlBox   = document.getElementById('url');
+  var sentence = document.getElementById('sentence');
+  var logBox   = document.getElementById('log');
+  var results  = document.getElementById('results');
+  var buttons  = [document.getElementById('health'),
+                  document.getElementById('goPost'),
+                  document.getElementById('goJsonp')];
+
+  // Remember the URL so it only gets typed once.
+  try {
+    var saved = localStorage.getItem('sq_test_url');
+    if (saved) urlBox.value = saved;
+  } catch (e) {}
+  urlBox.addEventListener('change', function () {
+    try { localStorage.setItem('sq_test_url', urlBox.value.trim()); } catch (e) {}
+  });
+
+  function log(msg) {
+    logBox.textContent += '\n' + msg;
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+  function reset(msg) { logBox.textContent = msg; results.innerHTML = ''; }
+  function busy(on) { buttons.forEach(function (b) { b.disabled = on; }); }
+
+  function getUrl() {
+    var u = urlBox.value.trim();
+    if (!u) { reset('No URL yet. Paste the /exec URL from your deployment.'); return null; }
+    if (u.indexOf('/exec') === -1) log('Warning: that URL does not end in /exec. A /dev URL will not work here.');
+    try { localStorage.setItem('sq_test_url', u); } catch (e) {}
+    return u;
+  }
+
+  // --- Method B plumbing: load the reply as a <script> tag, which sidesteps CORS
+  function jsonp(url, onDone, onFail) {
+    var name = 'cb' + Date.now();
+    var tag = document.createElement('script');
+    var timer = setTimeout(function () { cleanup(); onFail('No reply after 120 seconds.'); }, 120000);
+    function cleanup() {
+      clearTimeout(timer);
+      try { delete window[name]; } catch (e) { window[name] = undefined; }
+      if (tag.parentNode) tag.parentNode.removeChild(tag);
+    }
+    window[name] = function (data) { cleanup(); onDone(data); };
+    tag.onerror = function () { cleanup(); onFail('The script tag failed to load.'); };
+    tag.src = url + (url.indexOf('?') === -1 ? '?' : '&') + 'callback=' + name;
+    document.body.appendChild(tag);
+  }
+
+  // --- Health check
+  document.getElementById('health').onclick = function () {
+    var u = getUrl(); if (!u) return;
+    reset('Knocking on the script...');
+    busy(true);
+    jsonp(u, function (d) {
+      busy(false);
+      if (d && d.alive) {
+        log('The script answered.');
+        log(d.hasKey ? 'OPENAI_KEY is set. Ready to make a picture.'
+                     : 'PROBLEM: OPENAI_KEY is not set. Add it in Project Settings > Script Properties.');
+      } else {
+        log('Answered, but not with what was expected: ' + JSON.stringify(d));
+      }
+    }, function (err) {
+      busy(false);
+      log('No answer: ' + err);
+      log('Usually this means the deployment is not set to "Who has access: Anyone", or the URL is wrong.');
+    });
+  };
+
+  // --- Show the result three different ways and report which render
+  function show(d) {
+    results.innerHTML = '';
+
+    var ways = [
+      { title: 'Straight from the reply',
+        note: 'The picture data itself. If this fails, nothing was generated.',
+        src: d.b64 ? 'data:image/png;base64,' + d.b64 : '' },
+      { title: 'Google Drive thumbnail link',
+        note: 'The preferred way to show saved pictures on your phone.',
+        src: d.thumbUrl || '' },
+      { title: 'Google Drive direct link',
+        note: 'Backup method if the thumbnail link is blocked.',
+        src: d.ucUrl || '' }
+    ];
+
+    ways.forEach(function (w) {
+      var box = document.createElement('div');
+      box.className = 'panel';
+      box.innerHTML = '<h3>' + w.title + '</h3><p>' + w.note + '</p>';
+
+      var verdict = document.createElement('div');
+      verdict.className = 'verdict wait';
+
+      if (!w.src) {
+        verdict.className = 'verdict fail';
+        verdict.textContent = 'No link came back for this one.';
+        box.appendChild(verdict);
+        results.appendChild(box);
+        return;
+      }
+
+      verdict.textContent = 'Loading...';
+      box.appendChild(verdict);
+
+      var img = document.createElement('img');
+      img.onload = function () {
+        verdict.className = 'verdict pass';
+        verdict.textContent = 'WORKS';
+      };
+      img.onerror = function () {
+        verdict.className = 'verdict fail';
+        verdict.textContent = 'DID NOT LOAD';
+        img.style.display = 'none';
+      };
+      img.src = w.src;
+      box.appendChild(img);
+      results.appendChild(box);
+    });
+  }
+
+  function handle(d) {
+    busy(false);
+    if (!d) { log('Empty reply.'); return; }
+    if (!d.ok) {
+      log('The script reported a problem:');
+      log(d.error || JSON.stringify(d));
+      return;
+    }
+    log('Picture generated.');
+    if (d.driveError) log('Drive save failed: ' + d.driveError);
+    else if (d.fileId) log('Saved to Drive, file id ' + d.fileId);
+    log('Now checking which display method works...');
+    show(d);
+  }
+
+  document.getElementById('goPost').onclick = function () {
+    var u = getUrl(); if (!u) return;
+    reset('Method A: sending the sentence by POST.\nThis can take 30 seconds or more. Leave the page open.');
+    busy(true);
+    fetch(u, {
+      method: 'POST',
+      // text/plain on purpose: it avoids the CORS preflight that Apps Script rejects
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ sentence: sentence.value, quality: 'low' })
+    })
+    .then(function (r) { return r.text(); })
+    .then(function (t) {
+      try { handle(JSON.parse(t)); }
+      catch (e) { busy(false); log('Reply was not readable:'); log(t.slice(0, 500)); }
+    })
+    .catch(function (e) {
+      busy(false);
+      log('Method A failed: ' + e);
+      log('This is the expected failure if the browser is blocking it. Try method B.');
+    });
+  };
+
+  document.getElementById('goJsonp').onclick = function () {
+    var u = getUrl(); if (!u) return;
+    reset('Method B: sending the sentence as a script tag.\nThis can take 30 seconds or more. Leave the page open.');
+    busy(true);
+    jsonp(u + '?sentence=' + encodeURIComponent(sentence.value) + '&quality=low',
+      handle,
+      function (err) { busy(false); log('Method B failed: ' + err); });
+  };
+})();
+</script>
+</body>
+</html>

@@ -227,7 +227,7 @@ function story(){
     '<div id="pages">'+S.pages.map(pg).join('')+'</div>'+
     '<div class="q" onclick="newQ()"><em>Page '+(S.pages.length+1)+'</em>'+esc(q)+'</div>'+
     '<div id="box"></div>'+
-    (S.pages.length>1?'<button class="quiet" onclick="done()">I have finished my book</button>':'')+
+    (S.pages.length?'<button class="quiet" onclick="done()">I have finished my book</button>':'')+
     '<button class="quiet" onclick="grown()">Grown-ups</button>';
 
   box();

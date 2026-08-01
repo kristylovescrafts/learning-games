@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Story Quest</title>
+<style>
+:root{
+  --ink:#16233f; --ink-soft:#4a5878;
+  --paper:#fdf8ee; --card:#ffffff;
+  --gold:#f5a524; --gold-dark:#d4860a;
+  --leaf:#2f8f5b; --coral:#e0644f; --sky:#3d7fd6;
+  --line:#e6dfd0;
+  --r:18px;
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  margin:0;padding:0;background:var(--paper);color:var(--ink);
+  font:17px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.wrap{max-width:620px;margin:0 auto;padding:14px 16px 90px}
+
+/* header */
+.top{display:flex;align-items:center;gap:10px;margin-bottom:18px}
+.top a{
+  text-decoration:none;font-size:24px;background:var(--card);
+  border:2px solid var(--line);border-radius:14px;
+  width:48px;height:48px;display:grid;place-items:center;flex:none;
+}
+.top h1{font-size:22px;margin:0;letter-spacing:-.02em;font-weight:800}
+.top .who{margin-left:auto;font-size:14px;font-weight:700;color:var(--ink-soft)}
+
+h2{font-size:24px;margin:0 0 6px;letter-spacing:-.02em;font-weight:800}
+.lede{color:var(--ink-soft);margin:0 0 20px;font-size:16px}
+
+/* big choice buttons */
+.pick{
+  display:block;width:100%;text-align:left;cursor:pointer;
+  background:var(--card);border:3px solid var(--ink);border-radius:var(--r);
+  padding:18px;margin-bottom:14px;font:inherit;color:inherit;
+  box-shadow:0 4px 0 var(--ink);
+}
+.pick:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.pick .name{font-size:21px;font-weight:800;display:flex;align-items:center;gap:10px}
+.pick .desc{color:var(--ink-soft);font-size:15px;margin-top:5px}
+
+/* action buttons */
+button.go{
+  font:inherit;font-weight:800;font-size:18px;cursor:pointer;
+  border:3px solid var(--ink);border-radius:var(--r);
+  background:var(--gold);color:var(--ink);
+  padding:15px 22px;box-shadow:0 4px 0 var(--ink);
+}
+button.go:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+button.go[disabled]{opacity:.45;box-shadow:0 4px 0 var(--ink);transform:none}
+button.go.ghost{background:var(--card)}
+button.go.green{background:var(--leaf);color:#fff;border-color:#1d6b41;box-shadow:0 4px 0 #1d6b41}
+button.go.small{font-size:15px;padding:11px 16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+
+/* story starter cards */
+.cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:6px 0 4px}
+.starter{
+  aspect-ratio:2/3;border:3px solid var(--ink);border-radius:var(--r);
+  background:var(--sky);color:#fff;cursor:pointer;font:inherit;
+  display:grid;place-items:center;font-size:38px;
+  box-shadow:0 4px 0 var(--ink);padding:8px;
+}
+.starter:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.starter.flipped{background:var(--card);color:var(--ink);font-size:15px;
+  font-weight:700;line-height:1.35;text-align:center;align-content:center}
+.chosen{
+  background:var(--card);border:3px solid var(--ink);border-radius:var(--r);
+  padding:16px;font-size:19px;font-weight:700;box-shadow:0 4px 0 var(--ink);
+}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-soft);margin-bottom:6px}
+
+/* writing */
+.page{
+  background:var(--card);border:2px solid var(--line);border-radius:var(--r);
+  padding:14px;margin-bottom:12px;
+}
+.page .num{font-size:12px;font-weight:800;color:var(--ink-soft);letter-spacing:.08em}
+.page .txt{font-size:18px;margin:4px 0 0;white-space:pre-wrap}
+.page img{width:100%;border-radius:12px;margin-top:10px;display:block;background:#f0ece2}
+.page .tools{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+textarea{
+  width:100%;font:inherit;font-size:19px;padding:14px;border-radius:var(--r);
+  border:3px solid var(--ink);background:var(--card);color:inherit;
+  min-height:96px;resize:none;
+}
+textarea:focus{outline:3px solid var(--gold);outline-offset:2px}
+
+.mic{
+  width:100%;font:inherit;font-weight:800;font-size:19px;cursor:pointer;
+  border:3px solid var(--ink);border-radius:var(--r);background:var(--coral);
+  color:#fff;padding:20px;box-shadow:0 4px 0 #a63f2e;margin-bottom:12px;
+}
+.mic:active{transform:translateY(3px);box-shadow:0 1px 0 #a63f2e}
+.mic.listening{background:var(--leaf);box-shadow:0 4px 0 #1d6b41;animation:pulse 1.1s infinite}
+@keyframes pulse{50%{filter:brightness(1.18)}}
+
+.hint{background:#fff6e2;border:2px solid var(--gold);border-radius:14px;
+  padding:12px;font-size:15px;margin-bottom:12px}
+.err{background:#fdeceb;border:2px solid var(--coral);border-radius:14px;
+  padding:12px;font-size:15px;margin-bottom:12px}
+.busy{text-align:center;padding:26px;font-weight:700;color:var(--ink-soft)}
+
+/* finished book */
+.cover{
+  background:var(--gold);border:3px solid var(--ink);border-radius:var(--r);
+  padding:26px 20px;text-align:center;box-shadow:0 5px 0 var(--ink);margin-bottom:18px;
+}
+.cover h2{font-size:28px;margin-bottom:8px}
+.cover .by{font-weight:700;color:#6b4a08}
+.gems{font-size:20px;font-weight:800;text-align:center;margin:14px 0}
+
+/* grown-up */
+.locked{margin-top:40px;text-align:center}
+.locked button{background:none;border:0;color:var(--ink-soft);font:inherit;
+  font-size:13px;text-decoration:underline;cursor:pointer}
+
+@media print{
+  body{background:#fff}
+  .top,.row,button,.locked,.gems{display:none!important}
+  .wrap{max-width:none;padding:0}
+  .page{page-break-inside:avoid;break-inside:avoid;border:0;margin-bottom:26px}
+  .page .num{display:none}
+  .page .txt{font-size:22px;text-align:center;margin-top:12px}
+  .cover{page-break-after:always;border:0;background:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a href="index.html" title="All games">&#127968;</a>
+    <h1>Story Quest</h1>
+    <span class="who" id="whoTag"></span>
+  </div>
+  <div id="screen"></div>
+  <div class="locked" id="lockRow">
+    <button onclick="grownUp()">Grown-ups</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Story Quest
+   Talks to the Story Pictures Apps Script for illustrations.
+   ============================================================ */
+
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxKE5odhtYk3P3keJr474PwdVYydBCqzAten8qX3GDT5LRD4E-Wf4aFVvODUuZoL8e4/exec';
+
+var STARTERS = [
+  "Your pet learned to talk. The first thing it said was...",
+  "You found a door in your bedroom that wasn't there yesterday.",
+  "Everyone in town woke up two inches shorter. Except one person.",
+  "A dragon moved in next door and it is very, very shy.",
+  "You found a map inside a library book.",
+  "The school bus took a wrong turn and ended up somewhere strange.",
+  "Your shadow started doing things you didn't do.",
+  "A tiny spaceship landed in the cereal bowl.",
+  "You woke up and could understand what birds were saying.",
+  "The last cookie in the jar started talking.",
+  "Someone left a giant egg on the doorstep.",
+  "Your bike can suddenly go anywhere you imagine.",
+  "The moon looked different last night. Only you noticed.",
+  "A snowman knocked on the window at midnight.",
+  "You found a key that opens something you weren't expecting.",
+  "Every clock in the house stopped at the same time.",
+  "A cat followed you home and would not leave.",
+  "The tree in the yard grew a door overnight.",
+  "You got a letter with no stamp and no name on it.",
+  "All the socks in the world disappeared. You know why.",
+  "A very small giant needs your help.",
+  "The swimming pool was full of something other than water.",
+  "You can hear what one person is thinking. Just one.",
+  "A robot showed up and thinks you are its owner.",
+  "The library book you borrowed is missing its last page.",
+  "You found footprints in your room that were not yours.",
+  "The ice cream truck plays a song no one has ever heard.",
+  "A cloud got stuck in the backyard.",
+  "Your teacher has a secret and you just found out.",
+  "You planted a seed and something unexpected grew.",
+  "The mirror showed you somewhere else instead of your room.",
+  "Every animal at the zoo is looking right at you.",
+  "You found a photo of yourself somewhere you've never been.",
+  "The rain today was a colour rain should not be.",
+  "A paper airplane landed on your desk with a message.",
+  "You can make one thing in the world bigger. Anything.",
+  "The lights went out and something started glowing.",
+  "A bird dropped something shiny at your feet.",
+  "Your grandma told you a secret about the attic.",
+  "You met someone who says they are from the future."
+];
+
+var S = {};                 // current session
+var $ = function(id){ return document.getElementById(id); };
+var screenEl = $('screen');
+
+function save(k,v){ try{ localStorage.setItem('sq_'+k, JSON.stringify(v)); }catch(e){} }
+function load(k,d){ try{ var v=localStorage.getItem('sq_'+k); return v?JSON.parse(v):d; }catch(e){ return d; } }
+function esc(s){ return String(s||'').replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+/* ---------- talking to the script ---------- */
+function callScript(payload, done, fail){
+  fetch(SCRIPT_URL,{
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify(payload)
+  })
+  .then(function(r){ return r.text(); })
+  .then(function(t){
+    var d; try{ d=JSON.parse(t); }catch(e){ fail('The answer came back scrambled.'); return; }
+    if(d && d.ok) done(d); else fail((d&&d.error)||'Something went wrong.');
+  })
+  .catch(function(){ fail('Could not reach the picture maker. Check the wifi.'); });
+}
+
+/* ---------- speech ---------- */
+var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var rec = null, listening = false;
+
+function canListen(){ return !!SR; }
+
+function listen(onResult, onEnd){
+  if(!SR){ onEnd('This device cannot listen. You can type instead.'); return; }
+  try{
+    rec = new SR();
+    rec.lang = 'en-US';
+    rec.interimResults = false;
+    rec.maxAlternatives = 1;
+    rec.onresult = function(e){ onResult(e.results[0][0].transcript); };
+    rec.onerror = function(e){
+      onEnd(e.error==='not-allowed'
+        ? 'The microphone is blocked. Turn it on in Settings, or type instead.'
+        : null);
+    };
+    rec.onend = function(){ listening=false; onEnd(null); };
+    rec.start();
+    listening = true;
+  }catch(err){ onEnd('The microphone would not start.'); }
+}
+function stopListening(){ if(rec && listening){ try{ rec.stop(); }catch(e){} } }
+
+function speak(text, done){
+  try{
+    speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.82; u.pitch = 1.05;
+    if(done) u.onend = done;
+    speechSynthesis.speak(u);
+  }catch(e){ if(done) done(); }
+}
+
+/* ============================================================
+   SCREEN 1 — who is writing
+   ============================================================ */
+function screenWho(){
+  S = { pages: [], spelling: [], characters: [] };
+  $('whoTag').textContent = '';
+  $('lockRow').style.display = '';
+  screenEl.innerHTML =
+    '<h2>Who is writing today?</h2>'+
+    '<p class="lede">Pick your name to start a new book.</p>'+
+    '<button class="pick" onclick="setWho(\'Thomas\')">'+
+      '<div class="name">&#128994; Thomas</div></button>'+
+    '<button class="pick" onclick="setWho(\'Tori\')">'+
+      '<div class="name">&#128311; Tori</div></button>'+
+    '<button class="pick" onclick="setWho(\'Thomas and Tori\')">'+
+      '<div class="name">&#127917; Both of us</div>'+
+      '<div class="desc">Take turns. One writes a page, then the other.</div></button>';
+}
+function setWho(w){ S.who = w; $('whoTag').textContent = w; screenMode(); }
+
+/* ============================================================
+   SCREEN 2 — how are we writing
+   ============================================================ */
+function screenMode(){
+  var mic = canListen();
+  screenEl.innerHTML =
+    '<h2>How do you want to write?</h2>'+
+    '<p class="lede">You can pick a different one any day.</p>'+
+    (mic ? '' : '<div class="hint">This device will not let us use the microphone, '+
+      'so only Author mode is available here. Try Safari if you expected the mic.</div>')+
+    (mic ?
+      '<button class="pick" onclick="setMode(\'storyteller\')">'+
+        '<div class="name">&#127908; Storyteller</div>'+
+        '<div class="desc">Say your story out loud. No typing at all.</div></button>'+
+      '<button class="pick" onclick="setMode(\'writer\')">'+
+        '<div class="name">&#9997;&#65039; Writer</div>'+
+        '<div class="desc">Say it, listen to it, then spell it yourself. '+
+        'You can listen as many times as you want.</div></button>' : '')+
+    '<button class="pick" onclick="setMode(\'author\')">'+
+      '<div class="name">&#128218; Author</div>'+
+      '<div class="desc">Type it all by yourself. No microphone.</div></button>';
+}
+function setMode(m){ S.mode = m; screenStarter(); }
+
+/* ============================================================
+   SCREEN 3 — story starter
+   ============================================================ */
+function screenStarter(){
+  var pool = STARTERS.slice(), three = [];
+  while(three.length < 3 && pool.length){
+    three.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  }
+  S.three = three;
+  screenEl.innerHTML =
+    '<h2>Pick a card</h2>'+
+    '<p class="lede">Tap one to turn it over. That is how your story begins.</p>'+
+    '<div class="cards">'+
+      three.map(function(_,i){
+        return '<button class="starter" id="c'+i+'" onclick="flip('+i+')">?</button>';
+      }).join('')+
+    '</div>'+
+    '<div class="row"><button class="go ghost small" onclick="ownIdea()">'+
+      'I already have an idea</button></div>';
+}
+function flip(i){
+  var el = $('c'+i);
+  el.classList.add('flipped');
+  el.textContent = S.three[i];
+  el.onclick = null;
+  setTimeout(function(){ chooseStarter(S.three[i]); }, 700);
+}
+function chooseStarter(text){
+  S.starter = text;
+  screenEl.innerHTML =
+    '<div class="eyebrow">Your story starts here</div>'+
+    '<div class="chosen">'+esc(text)+'</div>'+
+    '<div class="row">'+
+      '<button class="go green" onclick="screenChars()">Let\'s go</button>'+
+      '<button class="go ghost" onclick="screenStarter()">Different card</button>'+
+    '</div>';
+}
+function ownIdea(){
+  S.starter = '';
+  screenChars();
+}
+
+/* ============================================================
+   SCREEN 4 — who is in the story (keeps pictures consistent)
+   ============================================================ */
+function screenChars(){
+  screenEl.innerHTML =
+    '<h2>Who is in your story?</h2>'+
+    '<p class="lede">Tell me what they look like and they will look the same '+
+    'in every picture. You can skip this.</p>'+
+    '<textarea id="chars" placeholder="Rex is a small purple dragon with yellow horns" '+
+      'autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>'+
+    '<div class="row">'+
+      '<button class="go green" onclick="saveChars()">Done</button>'+
+      '<button class="go ghost" onclick="skipChars()">Skip</button>'+
+    '</div>';
+}
+function saveChars(){ S.characters = $('chars').value.trim(); screenWrite(); }
+function skipChars(){ S.characters = ''; screenWrite(); }
+
+/* ============================================================
+   SCREEN 5 — writing
+   ============================================================ */
+function screenWrite(){
+  $('lockRow').style.display = 'none';
+  var m = S.mode;
+  var turn = (S.who === 'Thomas and Tori')
+    ? '<div class="hint">Turn ' + (S.pages.length + 1) + ' &mdash; ' +
+      (S.pages.length % 2 === 0 ? 'Thomas' : 'Tori') + "'s page</div>"
+    : '';
+
+  screenEl.innerHTML =
+    (S.starter ? '<div class="eyebrow">Your story starts here</div>'+
+      '<div class="chosen" style="font-size:16px;margin-bottom:18px">'+esc(S.starter)+'</div>' : '')+
+    '<div id="pages">'+ S.pages.map(pageHtml).join('') +'</div>'+
+    turn +
+    '<div id="composer"></div>'+
+    (S.pages.length ?
+      '<div class="row"><button class="go" onclick="screenFinish()">'+
+      'Finish my book</button></div>' : '');
+
+  composer();
+  window.scrollTo(0, document.body.scrollHeight);
+}
+
+function pageHtml(p, i){
+  return '<div class="page">'+
+    '<div class="num">PAGE '+(i+1)+'</div>'+
+    '<p class="txt">'+esc(p.text)+'</p>'+
+    (p.img ? '<img src="'+p.img+'" alt="">' : '')+
+    '<div class="tools">'+
+      (p.img
+        ? '<button class="go ghost small" onclick="editPage('+i+')">Change my words</button>'
+        : '<button class="go small" onclick="draw('+i+')">&#127912; Draw this page</button>')+
+      '<button class="go ghost small" onclick="removePage('+i+')">Delete</button>'+
+    '</div>'+
+  '</div>';
+}
+
+function composer(){
+  var box = $('composer');
+  if(S.mode === 'storyteller'){
+    box.innerHTML =
+      '<button class="mic" id="micBtn" onclick="talkStory()">&#127908; Hold on, tap and talk</button>'+
+      '<textarea id="entry" placeholder="Your words will appear here" '+
+        'autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>'+
+      '<div class="row"><button class="go green" onclick="addPage()">Add this page</button></div>'+
+      '<div id="msg"></div>';
+  } else if(S.mode === 'writer'){
+    box.innerHTML =
+      '<button class="mic" id="micBtn" onclick="talkThenType()">&#127908; Say your sentence</button>'+
+      '<div id="replay"></div>'+
+      '<div id="msg"></div>';
+  } else {
+    box.innerHTML =
+      '<textarea id="entry" placeholder="Write the next part of your story" '+
+        'autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>'+
+      '<div class="row"><button class="go green" onclick="addPage()">Add this page</button></div>'+
+      '<div id="msg"></div>';
+  }
+}
+
+function msg(html, kind){
+  var m = $('msg'); if(!m) return;
+  m.innerHTML = html ? '<div class="'+(kind||'hint')+'">'+html+'</div>' : '';
+}
+
+/* --- Storyteller: dictate straight into the box --- */
+function talkStory(){
+  var btn = $('micBtn');
+  if(listening){ stopListening(); return; }
+  btn.classList.add('listening');
+  btn.innerHTML = '&#128308; Listening... tap when done';
+  msg('');
+  listen(function(text){
+    var box = $('entry');
+    box.value = (box.value ? box.value + ' ' : '') + text;
+  }, function(err){
+    btn.classList.remove('listening');
+    btn.innerHTML = '&#127908; Tap and talk';
+    if(err) msg(err, 'err');
+  });
+}
+
+/* --- Writer: say it, hear it, spell it (transcript stays hidden) --- */
+function talkThenType(){
+  var btn = $('micBtn');
+  if(listening){ stopListening(); return; }
+  btn.classList.add('listening');
+  btn.innerHTML = '&#128308; Listening... tap when done';
+  msg('');
+  listen(function(text){
+    S.heard = text;
+  }, function(err){
+    btn.classList.remove('listening');
+    btn.innerHTML = '&#127908; Say your sentence';
+    if(err){ msg(err,'err'); return; }
+    if(!S.heard){ msg('I did not catch that. Try again.','err'); return; }
+    typeItOut();
+  });
+}
+
+function typeItOut(){
+  var heard = S.heard;
+  $('composer').innerHTML =
+    '<div class="hint">Listen, then spell it yourself. '+
+    'You can listen as many times as you like. No peeking &mdash; there is nothing to peek at!</div>'+
+    '<button class="mic" style="background:var(--sky);box-shadow:0 4px 0 #2a5c9c" '+
+      'onclick="speak(S.heard)">&#128266; Play it again</button>'+
+    '<textarea id="entry" placeholder="Type what you hear" '+
+      'autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off"></textarea>'+
+    '<div class="row">'+
+      '<button class="go green" onclick="addPage()">Add this page</button>'+
+      '<button class="go ghost small" onclick="composer()">Start over</button>'+
+    '</div><div id="msg"></div>';
+  setTimeout(function(){ speak(heard); }, 350);
+}
+
+/* --- adding a page --- */
+function addPage(){
+  var box = $('entry');
+  var text = (box.value || '').trim();
+  if(!text){ msg('Write something first!','err'); return; }
+
+  // Writer mode: log what they heard against what they typed.
+  if(S.mode === 'writer' && S.heard){
+    var said = S.heard.toLowerCase().replace(/[.,!?;:"']/g,'').split(/\s+/);
+    var typed = text.toLowerCase().replace(/[.,!?;:"']/g,'').split(/\s+/);
+    said.forEach(function(w,i){
+      if(!w) return;
+      S.spelling.push({ said:w, typed:typed[i]||'', ok:(typed[i]||'')===w });
+    });
+    S.heard = '';
+  }
+
+  S.pages.push({ text:text, img:'', fileId:'' });
+  save('draft', S);
+  screenWrite();
+}
+
+function removePage(i){
+  if(!confirm('Delete page '+(i+1)+'?')) return;
+  S.pages.splice(i,1);
+  save('draft', S);
+  screenWrite();
+}
+
+/* --- change the words, redraw the picture --- */
+function editPage(i){
+  var p = S.pages[i];
+  var newText = prompt(
+    'Change your words and the picture will be drawn again.\n\n'+
+    'Tip: more describing words make a better picture.', p.text);
+  if(newText === null) return;
+  newText = newText.trim();
+  if(!newText) return;
+  p.text = newText;
+  p.img = ''; p.fileId = '';
+  save('draft', S);
+  screenWrite();
+  draw(i);
+}
+
+/* --- illustration --- */
+function draw(i){
+  var p = S.pages[i];
+  var host = $('pages').children[i];
+  host.innerHTML = '<div class="busy">&#127912; Drawing page '+(i+1)+'...<br>'+
+    '<span style="font-weight:400;font-size:15px">This takes about half a minute. '+
+    'Keep this page open.</span></div>';
+
+  var story = S.pages.map(function(x){ return x.text; }).join(' ');
+
+  callScript({
+    action:'illustrate',
+    sentence: p.text,
+    characters: S.characters,
+    quality:'low'
+  }, function(d){
+    p.img = d.url || ('data:image/png;base64,'+d.b64);
+    p.fileId = d.fileId || '';
+    save('draft', S);
+    screenWrite();
+  }, function(err){
+    host.innerHTML = pageHtml(p,i);
+    var e = document.createElement('div');
+    e.className='err'; e.textContent = err;
+    host.appendChild(e);
+  });
+}
+
+/* ============================================================
+   SCREEN 6 — finish
+   ============================================================ */
+function screenFinish(){
+  screenEl.innerHTML =
+    '<h2>What is your book called?</h2>'+
+    '<p class="lede">Every book needs a title.</p>'+
+    '<textarea id="title" style="min-height:60px" placeholder="My book is called..." '+
+      'autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>'+
+    '<div class="row">'+
+      '<button class="go green" onclick="finish()">Finish it!</button>'+
+      '<button class="go ghost" onclick="screenWrite()">Keep writing</button>'+
+    '</div><div id="msg"></div>';
+}
+
+function finish(){
+  var t = ($('title').value || '').trim();
+  if(!t){ msg('Give it a title first!','err'); return; }
+  S.title = t;
+
+  var gems = load('gems',0) + 5 + S.pages.length;
+  save('gems', gems);
+
+  var shelf = load('shelf',[]);
+  shelf.unshift({ title:S.title, who:S.who, when:Date.now(),
+                  pages:S.pages, mode:S.mode });
+  save('shelf', shelf.slice(0,40));
+
+  callScript({
+    action:'saveBook', who:S.who, title:S.title, mode:S.mode,
+    pages:S.pages, spelling:S.spelling
+  }, function(){}, function(){});   // saving to the sheet is silent either way
+
+  try{ localStorage.removeItem('sq_draft'); }catch(e){}
+  showBook(gems);
+}
+
+function showBook(gems){
+  $('lockRow').style.display = '';
+  screenEl.innerHTML =
+    '<div class="cover"><h2>'+esc(S.title)+'</h2>'+
+      '<div class="by">written by '+esc(S.who)+'</div></div>'+
+    S.pages.map(pageFinal).join('')+
+    '<div class="gems">&#128142; '+gems+' gems</div>'+
+    '<div class="row">'+
+      '<button class="go" onclick="window.print()">&#128424; Print my book</button>'+
+      '<button class="go green" onclick="screenWho()">Write another</button>'+
+    '</div>';
+  window.scrollTo(0,0);
+}
+function pageFinal(p,i){
+  return '<div class="page">'+
+    (p.img ? '<img src="'+p.img+'" alt="">' : '')+
+    '<p class="txt">'+esc(p.text)+'</p></div>';
+}
+
+/* ============================================================
+   Grown-ups
+   ============================================================ */
+function grownUp(){
+  var code = prompt('Grown-up code');
+  if(code !== '1921') return;
+  var shelf = load('shelf',[]);
+  screenEl.innerHTML =
+    '<h2>Grown-ups</h2>'+
+    '<p class="lede">'+shelf.length+' book'+(shelf.length===1?'':'s')+
+    ' saved on this device. Everything is also in your Google Sheet.</p>'+
+    shelf.map(function(b,i){
+      return '<button class="pick" onclick="openSaved('+i+')">'+
+        '<div class="name" style="font-size:18px">'+esc(b.title)+'</div>'+
+        '<div class="desc">'+esc(b.who)+' &middot; '+b.pages.length+' pages &middot; '+
+        new Date(b.when).toLocaleDateString()+'</div></button>';
+    }).join('')+
+    '<div class="row"><button class="go ghost small" onclick="screenWho()">Back</button></div>';
+}
+function openSaved(i){
+  var b = load('shelf',[])[i];
+  S = b; S.who = b.who; S.title = b.title;
+  showBook(load('gems',0));
+}
+
+/* ============================================================
+   start — offer to resume an unfinished book
+   ============================================================ */
+(function(){
+  var d = load('draft',null);
+  if(d && d.pages && d.pages.length){
+    S = d;
+    $('whoTag').textContent = d.who || '';
+    screenEl.innerHTML =
+      '<h2>You have a book on the go</h2>'+
+      '<p class="lede">'+esc(d.who)+' was writing something with '+
+      d.pages.length+' page'+(d.pages.length===1?'':'s')+'.</p>'+
+      '<div class="row">'+
+        '<button class="go green" onclick="screenWrite()">Keep going</button>'+
+        '<button class="go ghost" onclick="screenWho()">Start a new one</button>'+
+      '</div>';
+  } else {
+    screenWho();
+  }
+})();
+</script>
+</body>
+</html>

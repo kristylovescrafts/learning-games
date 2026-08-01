@@ -254,7 +254,7 @@ function story(){
     '<div id="pages">'+S.pages.map(pg).join('')+'</div>'+
     '<div class="q" onclick="newQ()"><em>Page '+(S.pages.length+1)+'</em>'+esc(q)+'</div>'+
     '<div id="box"></div>'+
-    (S.pages.length?'<button class="quiet" onclick="done()">I have finished my book</button>':'')+
+    (S.pages.length?'<button class="quiet" onclick="done()">I have finished writing</button>':'')+
     '<button class="quiet" onclick="grown()">Grown-ups</button>';
 
   box();
@@ -275,7 +275,7 @@ function pg(p,i){
           : p.img ? '<img src="'+p.img+'" alt="">' : '';
   return '<div class="page"><p>'+esc(p.text)+'</p>'+art+
     (p.error?'<div class="oops">'+esc(p.error)+'</div>':'')+
-    (p.drawing?'':'<button class="redo" onclick="redo('+i+')">change my words</button>')+
+    (p.drawing||!p.img?'':'<button class="redo" onclick="redo('+i+')">change my words</button>')+
     '</div>';
 }
 function repaint(i){
@@ -357,7 +357,7 @@ function add(){
 
   S.pages.push({text:t,img:'',fileId:''});
   var i=S.pages.length-1;
-  q=''; save('draft',S); story(); drawIt(i);
+  q=''; save('draft',S); story();
   var d=$('box'); if(d) d.scrollIntoView({block:'center'});
 }
 
@@ -365,26 +365,9 @@ function redo(i){
   var p=S.pages[i];
   var t=prompt('Change your words and the picture will be drawn again.',p.text);
   if(t===null)return; t=t.trim(); if(!t)return;
-  p.text=t; p.img=''; p.fileId=''; save('draft',S); story(); drawIt(i);
+  p.text=t; p.img=''; p.fileId=''; save('draft',S); story();
 }
 
-function drawIt(i){
-  status('drawIt('+i+') called');
-  var p=S.pages[i];
-  if(!p){ status('<b>STOP</b> no page at index '+i,1); return; }
-  if(p.drawing){ status('<b>STOP</b> already drawing',1); return; }
-  p.drawing=true; p.error=''; repaint(i);
-  status('sending page '+(i+1)+' to the script...');
-  var sofar=S.pages.slice(0,i).map(function(x){return x.text;}).join(' ').trim();
-  call({action:'illustrate',sentence:p.text,characters:S.characters,
-        premise:S.starter,sofar:sofar,quality:'low'},
-    function(d){ status('picture came back for page '+(i+1)+
-        (d.url?' (drive link)':(d.b64?' (raw image)':' (EMPTY!)')));
-      p.drawing=false; p.img=d.url||('data:image/jpeg;base64,'+d.b64);
-      p.fileId=d.fileId||''; save('draft',S); repaint(i); },
-    function(e){ status('<b>FAILED</b> page '+(i+1)+': '+e,1);
-      p.drawing=false; p.error=e; save('draft',S); repaint(i); });
-}
 
 /* ---------- finishing ---------- */
 function done(){
@@ -393,13 +376,42 @@ function done(){
     '<textarea id="t" style="min-height:64px" placeholder="my book is called..." '+
       'autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>'+
     '<div id="say"></div>'+
-    '<button class="next" onclick="seal()">Finish it!</button>'+
+    '<button class="next" onclick="seal()">&#127912; Draw my story now!</button>'+
     '<button class="quiet" onclick="story()">keep writing</button>';
 }
 function seal(){
   var t=($('t').value||'').trim();
   if(!t){say('give it a title first',1);return;}
   S.title=t;
+  drawAll();
+}
+
+/* Draws every page, one after another, with the finished story as context. */
+function drawAll(){
+  var n=S.pages.length, done=0;
+  el.innerHTML='<div class="cover"><h3>'+esc(S.title)+'</h3>'+
+    '<span>written by '+esc(S.who)+'</span></div>'+
+    '<div id="pages">'+S.pages.map(pg).join('')+'</div>'+
+    '<p id="prog" style="text-align:center;font-weight:800">Drawing picture 1 of '+n+'...</p>';
+
+  var whole=S.pages.map(function(x){return x.text;}).join(' ');
+
+  function nextOne(i){
+    if(i>=n){ $('prog').outerHTML=''; sealDone(); return; }
+    var p=S.pages[i];
+    $('prog').textContent='Drawing picture '+(i+1)+' of '+n+'...';
+    p.drawing=true; repaint(i);
+    call({action:'illustrate',sentence:p.text,characters:S.characters,
+          premise:S.starter,sofar:whole,wholeStory:true,quality:'low'},
+      function(d){ p.drawing=false; p.img=d.url||('data:image/jpeg;base64,'+d.b64);
+        p.fileId=d.fileId||''; save('draft',S); repaint(i); nextOne(i+1); },
+      function(e){ p.drawing=false; p.error=e; repaint(i); nextOne(i+1); });
+  }
+  nextOne(0);
+}
+
+function sealDone(){
+  var t=S.title;
   var g=load('gems',0)+5+S.pages.length; save('gems',g);
   var sh=load('shelf',[]);
   sh.unshift({title:t,who:S.who,when:Date.now(),pages:S.pages});

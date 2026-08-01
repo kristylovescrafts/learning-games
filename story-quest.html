@@ -111,41 +111,305 @@ function scriptUrl(){ return load('url', FALLBACK_URL); }
 
 var STARTERS=[
  "Your pet learned to talk. The first thing it said was...",
+ "A cat followed you home and would not leave.",
+ "Every animal at the zoo is looking right at you.",
+ "A bird dropped something shiny at your feet.",
+ "The dog next door has been digging the same hole for a week.",
+ "A fox is sitting on your doorstep every morning at seven.",
+ "You found a nest with something in it that is not an egg.",
+ "The goldfish has been staring at you all day.",
+ "A horse in the field knows your name.",
+ "Squirrels have started leaving you presents.",
+ "The neighbour's parrot repeats things you said in private.",
+ "A wolf cub is following your class on the school trip.",
+ "Bees have built something in the shape of a door.",
+ "A whale surfaced right next to your boat and waited.",
+ "Your rabbit disappears every night and comes back muddy.",
+ "An owl taps the window three times, every night.",
+ "The spider in the corner has spun a picture.",
+ "A turtle in the pond is much older than anyone thinks.",
+ "All the birds flew off at once. Except one.",
+ "A mouse in the kitchen is wearing something.",
  "You found a door in your bedroom that wasn't there yesterday.",
  "Everyone in town woke up two inches shorter. Except one person.",
  "A dragon moved in next door and it is very, very shy.",
- "You found a map inside a library book.",
- "The school bus took a wrong turn somewhere strange.",
  "Your shadow started doing things you didn't do.",
- "A tiny spaceship landed in the cereal bowl.",
  "You woke up and could understand what birds were saying.",
+ "Your bike can suddenly go anywhere you imagine.",
+ "You found a key that opens something surprising.",
+ "The tree in the yard grew a door overnight.",
+ "A very small giant needs your help.",
+ "You can make one thing in the world bigger. Anything.",
+ "The mirror showed somewhere else instead of your room.",
+ "You can hear what one person is thinking. Just one.",
+ "Your reflection waved before you did.",
+ "You can pause time, but only for ten seconds.",
+ "Everything you draw today becomes real tomorrow.",
+ "You found a hat that makes you invisible when it rains.",
+ "One stair in your house leads somewhere different every time.",
+ "Your name appeared carved into a tree that is 200 years old.",
+ "You can talk to one thing that is not alive. You choose.",
+ "A puddle in the road is much deeper than a puddle should be.",
  "The last cookie in the jar started talking.",
  "Someone left a giant egg on the doorstep.",
- "Your bike can suddenly go anywhere you imagine.",
- "A snowman knocked on the window at midnight.",
- "You found a key that opens something surprising.",
  "Every clock in the house stopped at the same time.",
- "A cat followed you home and would not leave.",
- "The tree in the yard grew a door overnight.",
  "You got a letter with no stamp and no name on it.",
  "All the socks in the world disappeared. You know why.",
- "A very small giant needs your help.",
  "The swimming pool was full of something other than water.",
- "A robot showed up and thinks you are its owner.",
  "You found footprints in your room that were not yours.",
  "A cloud got stuck in the backyard.",
  "You planted a seed and something unexpected grew.",
- "The mirror showed somewhere else instead of your room.",
- "Every animal at the zoo is looking right at you.",
  "The rain today was a colour rain should not be.",
  "A paper airplane landed on your desk with a message.",
- "You can make one thing in the world bigger. Anything.",
  "The lights went out and something started glowing.",
- "A bird dropped something shiny at your feet.",
- "Your grandma told you a secret about the attic.",
- "You met someone who says they are from the future.",
+ "You found a photo of yourself somewhere you've never been.",
  "The ice cream truck plays a song no one has heard before.",
- "You found a photo of yourself somewhere you've never been."
+ "Your grandma told you a secret about the attic.",
+ "The milk in the fridge is warm and the oven is cold.",
+ "Somebody has been rearranging the furniture at night.",
+ "You found a shopping list with your name at the bottom.",
+ "There is one extra chair at the table and nobody knows whose.",
+ "The wallpaper in the hall has changed pattern.",
+ "A robot showed up and thinks you are its owner.",
+ "A tiny spaceship landed in the cereal bowl.",
+ "You met someone who says they are from the future.",
+ "A snowman knocked on the window at midnight.",
+ "Someone your exact age moved in and has your exact name.",
+ "A knight in full armour is asking for directions.",
+ "There is a new kid at school and nobody can remember their face.",
+ "A pirate is very lost and very embarrassed about it.",
+ "Someone arrived asking for a package that has not been sent yet.",
+ "A creature nobody has a name for is hiding in the shed.",
+ "Your imaginary friend from when you were three came back.",
+ "An astronaut landed in the park and wants to stay.",
+ "A talking suitcase turned up at the airport with your name on it.",
+ "Someone claims to be your great-great-grandchild.",
+ "A very polite monster needs somewhere to sleep.",
+ "The school bus took a wrong turn somewhere strange.",
+ "You found a map inside a library book.",
+ "There is an island that only appears at low tide.",
+ "The train you got on does not stop where the sign said.",
+ "A path in the woods was not there last week.",
+ "You found a tunnel behind the shelves in the basement.",
+ "The elevator has a button for a floor that does not exist.",
+ "A hot air balloon landed in the playground and the basket is empty.",
+ "Somebody left a rowboat tied up outside your house.",
+ "The road ends and then keeps going anyway.",
+ "You climbed higher than anyone has climbed here before.",
+ "A cave behind the waterfall is warm inside.",
+ "There is a staircase in the middle of a field, going down.",
+ "A bridge appeared across the river overnight.",
+ "Your family took a wrong turn and ended up somewhere wonderful.",
+ "Your teacher has a secret and you just found out.",
+ "The library book you borrowed is missing its last page.",
+ "Someone has been leaving notes in your desk.",
+ "The school pet escaped and is somewhere in the building.",
+ "There is a classroom nobody uses and today it was unlocked.",
+ "Everyone in class had the same dream last night.",
+ "The school photo has one extra person in it.",
+ "A substitute teacher knows things about you nobody knows.",
+ "Something is living in the sports equipment cupboard.",
+ "The school bell rang at completely the wrong time.",
+ "You found a time capsule buried by the fence.",
+ "The lost property box has something impossible in it.",
+ "Your homework came back marked by someone who is not your teacher.",
+ "A door in the school corridor was always painted shut. Not today.",
+ "Every pencil in the classroom vanished during lunch.",
+ "Your sibling has been keeping something in a box.",
+ "A relative you have never met sent you something strange.",
+ "Your parents are whispering about something in the kitchen.",
+ "You found a photograph of your mum as a child, somewhere odd.",
+ "Grandad says he can do something and nobody believes him.",
+ "There is a room in your house nobody talks about.",
+ "Your family has a rule and today you learned why.",
+ "Somebody in your family used to be famous for something.",
+ "You found your dad's old diary from when he was your age.",
+ "Your baby sister said her first word and it was not a normal one.",
+ "A box arrived addressed to someone who lived here 60 years ago.",
+ "Your family is moving, but only you know why.",
+ "Someone at the family party is not who they say.",
+ "Your cousin can do something you cannot explain.",
+ "There is a family photo where everyone is smiling except one person.",
+ "A toy you had forgotten about turned up in your bed.",
+ "Your shoes walked to the door on their own.",
+ "The umbrella opens by itself when something is about to happen.",
+ "A coin you found is warm and will not cool down.",
+ "There is a jar in the cupboard that has never been opened.",
+ "Your torch shows something different from what is really there.",
+ "A jigsaw puzzle has one piece too many.",
+ "The old radio only plays one station and nobody else can hear it.",
+ "A wind-up toy keeps going long after it should stop.",
+ "Somebody's glasses were left behind and everything looks different through them.",
+ "A snow globe shows your street instead of a mountain.",
+ "The bicycle in the garage belongs to nobody.",
+ "A music box plays a tune you have never heard but somehow know.",
+ "Your backpack is much heavier than what is inside it.",
+ "A book on the shelf has your name as the author.",
+ "The moon looked different last night. Only you noticed.",
+ "It snowed in the middle of summer, just on your street.",
+ "Every flower in the garden turned to face the same way.",
+ "The wind is carrying something that is not leaves.",
+ "There was thunder but the sky is completely clear.",
+ "The sea went out and did not come back in.",
+ "Fog rolled in and the town looks completely different.",
+ "A rainbow ended somewhere you can actually walk to.",
+ "Every puddle froze except one.",
+ "The stars spelled something out last night.",
+ "A river changed direction overnight.",
+ "The oldest tree in the park fell down and there was something underneath.",
+ "Lightning struck the same spot three times.",
+ "All the leaves turned colour in a single afternoon.",
+ "There is one warm patch in a freezing cold field.",
+ "The vegetables in the garden are growing far too fast.",
+ "Something in the fridge is humming.",
+ "Your birthday cake had a candle nobody lit.",
+ "The bread you baked came out with something inside.",
+ "Every apple on the tree is a different colour.",
+ "Somebody has been eating exactly half of everything.",
+ "The soup tastes like a memory.",
+ "A sweet shop opened and it is only open on Tuesdays.",
+ "The lemonade you made does something unexpected.",
+ "A picnic basket appeared on the hill with your favourite food in it.",
+ "Somebody has been leaving chalk marks on your street.",
+ "A window in the empty house is lit every night at eight.",
+ "You heard a sound from underneath the floor.",
+ "Everyone in town is pretending nothing happened.",
+ "A ship came into harbour with nobody aboard.",
+ "The town clock is exactly seven minutes wrong and always has been.",
+ "Something is buried in the garden and it is not a bone.",
+ "A stranger takes a photograph of your house every Sunday.",
+ "There are footprints leading up to the wall and then stopping.",
+ "Somebody returned a library book that was borrowed 50 years ago.",
+ "All the dogs in the neighbourhood started barking at once.",
+ "The lighthouse flashed a pattern that is not its normal one.",
+ "Somebody knows about the thing you have never told anyone.",
+ "There is a name scratched into the wall of your bedroom cupboard.",
+ "A boat washed up with a chest that will not open.",
+ "You woke up as somebody else in your family.",
+ "You and your best friend swapped voices.",
+ "Everything in your house is exactly one size too big.",
+ "Colours have swapped around and only you can tell.",
+ "You are suddenly the tallest person in the world.",
+ "Everyone can hear your thoughts for one day.",
+ "You can only speak in questions today.",
+ "Everything you touch turns a different colour.",
+ "You woke up and it was yesterday again.",
+ "You are the only person awake in the whole town.",
+ "Your left hand can do something your right hand cannot.",
+ "You can breathe underwater but only until sunset.",
+ "Everybody forgot your name overnight.",
+ "You are somehow both very small and very brave.",
+ "You can run faster than anyone but only backwards.",
+ "Someone very small needs somewhere safe to hide.",
+ "A creature is stuck and you are the only one who can see it.",
+ "Your friend has a problem and asked you not to tell.",
+ "Somebody is lost and does not speak your language.",
+ "An old person in your street needs help with something odd.",
+ "A baby animal has lost its mother.",
+ "Somebody left a note asking for help and no address.",
+ "Your neighbour has not opened their curtains in three days.",
+ "A stranger dropped something important and is already gone.",
+ "Somebody at school is being left out and you noticed.",
+ "A creature in the garden is hurt and hiding from you.",
+ "Someone needs to get somewhere before dark and cannot walk.",
+ "Your friend is scared of something you are not.",
+ "There is one seat left on the boat and two people who need it.",
+ "Somebody made a promise they cannot keep on their own.",
+ "You are the first person to open this door in a hundred years.",
+ "There is treasure and it is much closer than anyone thought.",
+ "The tide is coming in and the way back is going.",
+ "You have to cross something and there is only one way over.",
+ "A storm is coming and you are a long way from home.",
+ "You found something you are not supposed to have found.",
+ "There is a race and you were not supposed to enter.",
+ "The rope will only hold one more person.",
+ "Somebody has to go first and everyone is looking at you.",
+ "You have five minutes and three things you can carry.",
+ "There is a sound coming from the deepest part of the cave.",
+ "The map is wrong and you are the only one who knows.",
+ "You have to get past something that is asleep.",
+ "The way you came in has closed behind you.",
+ "A ladder goes up further than you can see.",
+ "You looked through the telescope and something looked back.",
+ "There is a light on the moon that should not be there.",
+ "Your spaceship landed on a planet made of something soft.",
+ "Every star went out for exactly one second.",
+ "A satellite fell in your field and it is not from your country.",
+ "There is a city at the bottom of the lake.",
+ "Something enormous is swimming underneath the boat.",
+ "You found a shell that plays a message.",
+ "The deepest part of the ocean has a light in it.",
+ "A submarine surfaced and asked for directions.",
+ "A photograph is changing a little bit every day.",
+ "You found a newspaper from next week.",
+ "Your watch runs backwards but only in one room.",
+ "Somebody left a message for you a hundred years ago.",
+ "The house remembers something that happened here.",
+ "You met someone who has been waiting a very long time.",
+ "A song on the radio is about something that has not happened yet.",
+ "There is a door that only opens on one day of the year.",
+ "The village has been the same for 500 years and today it changed.",
+ "You are the only one who remembers how it used to be.",
+ "Your best friend is moving away and has not told you.",
+ "You did something and now you have to decide whether to say so.",
+ "Somebody was kind to you and you do not know why.",
+ "You are not scared but everybody thinks you are.",
+ "Two of your friends have fallen out and both asked you first.",
+ "You got something you wanted and it does not feel how you expected.",
+ "Somebody said something and you cannot stop thinking about it.",
+ "You have to say sorry and you have not worked out how.",
+ "Your friend can do something you wish you could do.",
+ "Somebody trusted you with something big.",
+ "You are new somewhere and nobody has spoken to you yet.",
+ "You were brave once and nobody saw it.",
+ "There is something you have never told your family.",
+ "You made a promise before you knew how hard it would be.",
+ "Somebody needs you to be honest and it will hurt.",
+ "Everything in the house is enormous and you are tiny.",
+ "You are big enough to step over the river.",
+ "A whole city fits inside a matchbox.",
+ "An ant is carrying something far too heavy.",
+ "You can fit through a gap nobody else can.",
+ "There is a giant asleep under the hill.",
+ "A creature the size of a bus is very gentle.",
+ "You shrank and now the garden is a jungle.",
+ "Something enormous is standing in the fog.",
+ "The smallest one in the group has the biggest idea.",
+ "There is a shop that was not there yesterday and will not be there tomorrow.",
+ "A house on your street has no front door.",
+ "The museum has one room that is always locked.",
+ "There is a garden in the middle of the city that nobody visits.",
+ "An empty station still announces trains.",
+ "A field has one perfect circle in it.",
+ "The old factory has lights on at night.",
+ "There is a bench where somebody always sits, but never the same person.",
+ "A hotel where every room is the same room.",
+ "The market has one stall selling something impossible.",
+ "Everybody in town started humming the same tune.",
+ "You can only walk in straight lines today.",
+ "Nobody can say the word yes.",
+ "All the doors in the house swapped places.",
+ "Your voice comes out as somebody else's.",
+ "It has been Tuesday for four days.",
+ "Everybody's hair went white overnight.",
+ "Nothing in the house will stay tidy for more than a minute.",
+ "Every book in the library has the same last page.",
+ "Gravity is a bit weaker in your kitchen.",
+ "All the clocks agree except one, and it is right.",
+ "Everyone can jump twice as high today.",
+ "Every mirror in town shows the same face.",
+ "Nothing casts a shadow this morning.",
+ "Somebody has been swapping the salt and the sugar for weeks.",
+ "A stranger returned something you lost years ago.",
+ "There is one light on in the whole street and it is not yours.",
+ "You found a rope going down into the well.",
+ "Somebody built a snowman that looks exactly like you.",
+ "The old dog started running like a puppy again.",
+ "A crack in the pavement is getting wider every day.",
+ "You were given a job that nobody else wanted.",
+ "Somebody has been counting something out loud for hours.",
+ "There is one seed left and one place to plant it.",
+ "The last bus of the night stopped for somebody who was not there."
 ];
 
 var NUDGES=[
@@ -245,7 +509,7 @@ function go(w){ S.who=w; q=''; story(); }
    The whole app: prompt, pages, one question, one button
    ============================================================ */
 function story(){
-  if(!q) q=pick(NUDGES[tier(S.pages.length)]);
+  if(!q){ q=pick(NUDGES[tier(S.pages.length)]); askNudge(); }
 
   el.innerHTML=
     '<div class="prompt" onclick="newPrompt()">Your story starts here'+
@@ -263,10 +527,25 @@ function newPrompt(){
   if(S.pages.length) return;              // only before they have started
   S.starter=pick(STARTERS); story();
 }
+/* Asks the script for a question about THEIR story. Silent if it fails. */
+var nudgeSeq=0;
+function askNudge(){
+  var mine=++nudgeSeq;
+  var sofar=S.pages.map(function(x){return x.text;}).join(' ');
+  call({action:'nudge',premise:S.starter,sofar:sofar,page:S.pages.length+1},
+    function(d){
+      if(mine!==nudgeSeq || !d.question) return;
+      q=d.question;
+      var box=document.querySelector('.q');
+      if(box) box.innerHTML='<em>Page '+(S.pages.length+1)+'</em>'+esc(q);
+    },
+    function(){});
+}
+
 function newQ(){
   var t=NUDGES[tier(S.pages.length)], n=q, g=0;
   while(n===q&&g++<12) n=pick(t);
-  q=n; story();
+  q=n; story(); askNudge();
 }
 
 function pg(p,i){
@@ -385,41 +664,61 @@ function seal(){
   drawAll();
 }
 
-/* Page 1 first, then the rest at the same time using it as a look reference. */
+/* 1. work out the cast  2. draw them together once  3. draw every page
+   against that same picture, so nobody changes between pages. */
 function drawAll(){
-  var n=S.pages.length, done=0;
+  var n=S.pages.length;
+  if(!n){ sealDone(); return; }
+
   el.innerHTML='<div class="cover"><h3>'+esc(S.title)+'</h3>'+
     '<span>written by '+esc(S.who)+'</span></div>'+
     '<div id="pages">'+S.pages.map(pg).join('')+'</div>'+
-    '<p id="prog" style="text-align:center;font-weight:800">Drawing the first picture...</p>';
+    '<p id="prog" style="text-align:center;font-weight:800">Working out who is in your story...</p>';
 
-  var whole=(S.starter?'The story began: '+S.starter+' ':'')+
-            S.pages.map(function(x){return x.text;}).join(' ');
+  var whole=S.pages.map(function(x){return x.text;}).join(' ');
+  var full=(S.starter?'The story began: '+S.starter+' ':'')+whole;
 
-  function tick(){
-    done++;
+  call({action:'cast',premise:S.starter,story:'By '+S.who+'. '+whole},
+    function(d){ withCast(d.cast||S.characters||''); },
+    function(){ withCast(S.characters||''); });
+
+  function withCast(cast){
+    S.cast=cast;
     var pr=$('prog');
-    if(pr) pr.textContent='Drawn '+done+' of '+n+'...';
-    if(done>=n){ if(pr) pr.outerHTML=''; sealDone(); }
+    if(pr) pr.textContent='Drawing your characters...';
+
+    // one reference picture with the whole cast in it
+    call({action:'illustrate',
+          sentence:'All of these characters standing together in a row, facing forward, full body, plain background',
+          characters:cast, premise:'', sofar:'', quality:'low'},
+      function(r){ pages(cast, r.fileId||''); },
+      function(){ pages(cast, ''); });
   }
 
-  function one(i, ref, after){
-    var p=S.pages[i];
-    p.drawing=true; repaint(i);
-    call({action:'illustrate',sentence:p.text,characters:S.characters,
-          premise:S.starter,sofar:whole,ref:ref||'',quality:'low'},
-      function(d){ p.drawing=false; p.img=d.url||('data:image/jpeg;base64,'+d.b64);
-        p.fileId=d.fileId||''; save('draft',S); repaint(i); tick(); if(after) after(d.fileId||''); },
-      function(e){ p.drawing=false; p.error=e; repaint(i); tick(); if(after) after(''); });
-  }
-
-  if(!n){ sealDone(); return; }
-
-  one(0, '', function(refId){
+  function pages(cast, refId){
+    var done=0;
     var pr=$('prog');
-    if(pr && n>1) pr.textContent='Drawing the rest...';
-    for(var i=1;i<n;i++) one(i, refId);   // all at once
-  });
+    if(pr) pr.textContent='Drawing 0 of '+n+'...';
+
+    function tick(){
+      done++;
+      var b=$('prog');
+      if(b) b.textContent='Drawn '+done+' of '+n+'...';
+      if(done>=n){ if(b) b.outerHTML=''; sealDone(); }
+    }
+
+    for(var i=0;i<n;i++){
+      (function(i){
+        var p=S.pages[i];
+        p.drawing=true; repaint(i);
+        call({action:'illustrate',sentence:p.text,characters:cast,
+              premise:S.starter,sofar:full,ref:refId,quality:'low'},
+          function(d){ p.drawing=false; p.img=d.url||('data:image/jpeg;base64,'+d.b64);
+            p.fileId=d.fileId||''; save('draft',S); repaint(i); tick(); },
+          function(e){ p.drawing=false; p.error=e; repaint(i); tick(); });
+      })(i);
+    }
+  }
 }
 
 function sealDone(){

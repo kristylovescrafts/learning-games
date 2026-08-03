@@ -34,10 +34,10 @@ textarea{width:100%;font:inherit;font-size:19px;padding:14px;border-radius:14px;
   min-height:80px;resize:none;margin-top:10px}
 textarea:focus{outline:none;border-color:var(--ink)}
 .mic{width:100%;font:inherit;font-weight:800;font-size:17px;cursor:pointer;border:0;
-  border-radius:14px;background:var(--coral);color:#fff;padding:15px;margin-top:9px;
-  box-shadow:0 4px 0 #a63f2e}
-.mic:active{transform:translateY(3px);box-shadow:0 1px 0 #a63f2e}
-.mic.on{background:var(--leaf);box-shadow:0 4px 0 #1d6b41;animation:p 1.1s infinite}
+  border-radius:14px;background:var(--leaf);color:#fff;padding:15px;margin-top:9px;
+  box-shadow:0 4px 0 #1d6b41}
+.mic:active{transform:translateY(3px);box-shadow:0 1px 0 #1d6b41}
+.mic.on{background:var(--gold);color:var(--ink);box-shadow:0 4px 0 #c07d10;animation:p 1.1s infinite}
 .mic.blue{background:#3d7fd6;box-shadow:0 4px 0 #2a5c9c}
 @keyframes p{50%{filter:brightness(1.18)}}
 
@@ -46,6 +46,9 @@ textarea:focus{outline:none;border-color:var(--ink)}
 .next:active{transform:translateY(3px);box-shadow:0 1px 0 #1d6b41}
 .quiet{background:none;border:0;color:var(--soft);font:inherit;font-size:14px;
   text-decoration:underline;cursor:pointer;padding:14px 0;display:block;margin:0 auto}
+.home{display:block;width:fit-content;margin:22px auto 6px;padding:10px 18px;border-radius:999px;
+  background:var(--card);border:2px solid var(--line);color:var(--soft);font-weight:800;
+  font-size:14px;text-decoration:none}
 .say{font-size:14px;color:var(--soft);margin-top:8px}
 .oops{background:#fdeceb;border-radius:12px;padding:11px;font-size:14px;margin-top:9px}
 
@@ -63,7 +66,7 @@ textarea:focus{outline:none;border-color:var(--ink)}
 .opt button.on{border-color:var(--ink);background:var(--ink);color:#fff}
 
 @media print{
-  .mic,.next,.quiet,textarea,.say,button{display:none!important}
+  .mic,.next,.quiet,textarea,.say,button,.home{display:none!important}
   body{background:#fff}.wrap{max-width:none;padding:0}
   .panel{page-break-inside:avoid;margin-bottom:30px}
   .panel .n{display:none}
@@ -124,6 +127,14 @@ function sendStories(){
   }catch(e){}
 }
 function load(k,d){try{var v=localStorage.getItem('sq_'+k);return v?JSON.parse(v):d;}catch(e){return d;}}
+var HOME='<a class="home" href="/">\uD83C\uDFE0 All games</a>';
+var HOME_ASK='<a class="home" href="/" onclick="return leaveStory()">\uD83C\uDFE0 All games</a>';
+function leaveStory(){
+  var typed=false;
+  for(var i=0;i<4;i++){ var t=document.getElementById('t'+i); if(t&&t.value.trim()) typed=true; }
+  if(S&&S.caps) S.caps.forEach(function(c){ if(String(c||'').trim()) typed=true; });
+  return !typed || confirm('Leave this story? The writing so far will not be saved.');
+}
 function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function pad(n){return (n<10?'0':'')+n;}
@@ -194,7 +205,7 @@ function boot(){
         '<p class="lede">A grown-up needs to put the picture sets into the '+
         '<b>story-pictures</b> folder first.</p>'+
         '<p class="lede" style="font-size:14px">Expected file names: '+
-        'story-pictures/set01-1.png through story-pictures/set01-4.png</p>';
+        'story-pictures/set01-1.png through story-pictures/set01-4.png</p>'+HOME;
       return;
     }
     who();
@@ -206,7 +217,7 @@ function who(){
   el.innerHTML='<h2>Who is writing?</h2>'+
     '<button class="name" onclick="go(\'Thomas\')">&#128994; Thomas</button>'+
     '<button class="name" onclick="go(\'Tori\')">&#128311; Tori</button>'+
-    '<button class="quiet" onclick="grown()">Grown-ups</button>';
+    '<button class="quiet" onclick="grown()">Grown-ups</button>'+HOME;
 }
 function go(w){ S.who=w; shelf(); }
 
@@ -218,7 +229,7 @@ function shelf(){
         return '<button class="pickset" onclick="start('+i+')">'+
           '<img src="'+url(s,1)+'" alt="" loading="lazy"></button>';
       }).join('')+
-    '</div><button class="quiet" onclick="who()">Back</button>';
+    '</div><button class="quiet" onclick="who()">Back</button>'+HOME;
 }
 
 function start(i){ S.set=sets[i]; S.caps=['','','','']; write(); }
@@ -245,7 +256,7 @@ function write(){
     }).join('')+
     '<button class="next" onclick="finish()">My story is finished</button>'+
     '<button class="quiet" onclick="shelf()">Pick a different story</button>'+
-    '<button class="quiet" onclick="grown()">Grown-ups</button>';
+    '<button class="quiet" onclick="grown()">Grown-ups</button>'+HOME_ASK;
 }
 
 function keep(i){ S.caps[i]=$('t'+i).value; }
@@ -294,7 +305,7 @@ function finish(){
       'autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>'+
     '<div id="say9"></div>'+
     '<button class="next" onclick="seal()">Finish it!</button>'+
-    '<button class="quiet" onclick="write()">keep writing</button>';
+    '<button class="quiet" onclick="write()">keep writing</button>'+HOME_ASK;
 }
 
 function seal(){
@@ -319,7 +330,7 @@ function book(g){
     }).join('')+
     '<p style="text-align:center;font-weight:800">&#128142; '+g+' gems</p>'+
     '<button class="next" onclick="window.print()">&#128424; Print my book</button>'+
-    '<button class="quiet" onclick="who()">write another</button>';
+    '<button class="quiet" onclick="who()">write another</button>'+HOME;
   window.scrollTo(0,0);
 }
 
@@ -347,7 +358,7 @@ function grown(){
       sh.map(function(b,i){return '<button class="quiet" style="text-align:left;margin:0" '+
         'onclick="openBook('+i+')">'+esc(b.title)+' &middot; '+esc(b.who)+'</button>';}).join('')+
     '</div>'+
-    '<button class="quiet" onclick="boot()">Back</button>';
+    '<button class="quiet" onclick="boot()">Back</button>'+HOME;
 }
 function setMode(m){ save('mode',m); S.mode=m; grown(); }
 function setDevice(){ var n=prompt('What should this device be called?',deviceName()||'');

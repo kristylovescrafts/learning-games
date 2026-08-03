@@ -36,6 +36,8 @@
   .chips{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 4px}
   .chip{font-weight:800;font-size:.8rem;padding:4px 10px;border-radius:999px;background:#f3f0fb;color:var(--soft)}
   .chip b{color:var(--ink)}
+  .legend{margin:6px 0 2px;font-weight:700;font-size:.78rem;color:var(--soft);background:#f7f5fd;border-radius:10px;padding:7px 10px;line-height:1.35}
+  .legend b{color:var(--ink)}
   .group{font-family:var(--disp);font-weight:700;color:var(--soft);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;margin:16px 0 6px}
   .lv{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
   .lv:first-of-type{border-top:none}
@@ -173,6 +175,7 @@ const META={
     ["pairs","🌈","Rainbow Pairs","Friends of Ten"],
     ["triangle","🔺","Number Triangle","Friends of Ten"],
     ["equation","🟰","Build the Equation","Friends of Ten"],
+    ["missing","🕵️","Missing Number Mission","Friends of Ten"],
     ["teensChart","🚀","Teen Numbers Chart","Teen Numbers"],
     ["teensSpeed","🛰️","Teen Speed","Teen Numbers"],
     ["doublesChart","🐉","Doubles Chart","Doubles"],
@@ -203,12 +206,17 @@ function levelRow(m,L){
       <div class="badge none">—</div></div>`;
   }
   const correct=L.correct||0, total=L.total||0, wrong=(L.wrong!=null?L.wrong:total-correct);
-  const pct=Math.round(correct/total*100); const [cls,lbl]=band(pct);
+  const qs=(L.qs!=null&&L.qs>0)?L.qs:correct;
+  const hasFT=(L.firstTry!=null && qs>0);
+  const pct=hasFT?Math.round(L.firstTry/qs*100):Math.round(correct/total*100);
+  const [cls,lbl]=band(pct);
   const barc=cls==='good'?'var(--good)':cls==='mid'?'var(--mid)':'var(--low)';
   const miss=Object.keys(L.missed||{}).map(k=>({k,n:L.missed[k]})).sort((a,b)=>b.n-a.n);
   return `<div class="lv"><div class="ico">${ico}</div><div class="body">
       <div class="nm">${name}</div>
-      <div class="det">played ${L.plays||1}× · ${correct} right, ${wrong} wrong${L.last?` · last ${fmtDate(L.last)}`:''}</div>
+      <div class="det">${hasFT
+        ? `played ${L.plays||1}× · ${qs} question${qs===1?'':'s'} · <b>${L.firstTry} right first try</b>${wrong?` · ${wrong} retr${wrong===1?'y':'ies'}`:''}`
+        : `played ${L.plays||1}× · ${correct} right, ${wrong} wrong`}${L.last?` · last ${fmtDate(L.last)}`:''}</div>
       <div class="bar"><i style="width:${pct}%;background:${barc}"></i></div>
       ${miss.length?`<div class="miss">missed: ${miss.map(x=>`<span>${x.k}${x.n>1?` ${x.n}×`:''}</span>`).join('')}</div>`:''}
     </div>
@@ -227,22 +235,31 @@ function kidCard(app,player){
   const notTried=meta.order.filter(m=>m[0]!=='placeValue' && (!levels[m[0]]||!levels[m[0]].total)).map(m=>m[2]);
   // hardest / strongest
   let extra='';
-  const solid=tried.filter(m=>levels[m[0]].total>=5).map(m=>({name:m[2],ico:m[1],pct:Math.round(levels[m[0]].correct/levels[m[0]].total*100)}));
+  const lvPct=L=>{const c=L.correct||0,t=L.total||0,q=(L.qs!=null&&L.qs>0)?L.qs:c;
+    return (L.firstTry!=null&&q>0)?Math.round(L.firstTry/q*100):Math.round(c/t*100);};
+  const solid=tried.filter(m=>levels[m[0]].total>=5).map(m=>({name:m[2],ico:m[1],pct:lvPct(levels[m[0]])}));
   if(solid.length){
     const hard=solid.slice().sort((a,b)=>a.pct-b.pct)[0], easy=solid.slice().sort((a,b)=>b.pct-a.pct)[0];
     extra=`<div class="chips"><span class="chip">💪 strongest: <b>${easy.ico} ${easy.name}</b></span>`+
       (hard.name!==easy.name?`<span class="chip">🎯 hardest: <b>${hard.ico} ${hard.name}</b></span>`:'')+`</div>`;
   }
+  const anyFT=meta.order.some(m=>levels[m[0]]&&levels[m[0]].firstTry!=null);
+  const legend=anyFT?`<div class="legend">Scores below are <b>first-try accuracy</b> — how often it was right without a second go.</div>`:'';
   const log=(player.log||[]).slice(-10).reverse();
   const sessions=log.length?`<details class="sessions"><summary>Recent sessions (${log.length})</summary>${
     log.map(e=>{const mm=meta.order.find(x=>x[0]===e.modeId||x[0]===e.mode); const nm=mm?`${mm[1]} ${mm[2]}`:(e.mode||e.modeId||'');
-      return `<div class="srow">${fmtWhen(e.at)} — ${nm}${e.explored?' · explored':(e.correct!=null?` · ${e.correct} right${e.wrong!=null?`, ${e.wrong} wrong`:''}`:'')}</div>`;}).join('')
+      const q=(e.qs!=null?e.qs:e.total); const ft=e.firstTry;
+      const detail=e.explored?' · explored'
+        :(ft!=null&&q)?` · ${ft}/${q} first try`
+        :(e.correct!=null?` · ${e.correct} right${e.wrong!=null?`, ${e.wrong} wrong`:''}`:'');
+      return `<div class="srow">${fmtWhen(e.at)} — ${nm}${detail}</div>`;}).join('')
   }</details>`:'';
   return `<div class="kidcard">
     <div class="kidhead"><div class="ava">${player.avatar||'🙂'}</div>
       <div><div class="nm">${player.name||'Player'}</div>
         <div class="meta">${tried.length?`${tried.length} level${tried.length===1?'':'s'} this day`:'no scored levels this day'}</div></div></div>
     ${extra}
+    ${legend}
     ${rows}
     ${notTried.length?`<div class="not-tried-note">🚧 Hasn't tried yet: ${notTried.join(', ')}</div>`:''}
     ${sessions}

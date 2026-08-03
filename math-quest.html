@@ -513,13 +513,15 @@ function renderPinGate(onOK){
 }
 
 /* ======================= LEVEL TRACKING ======================= */
-function logLevel(modeId,correct,wrong,explored,missed){
+function logLevel(modeId,correct,wrong,explored,missed,firstTry){
   const p=P(); if(!p.levels)p.levels={};
-  const L=p.levels[modeId]||(p.levels[modeId]={plays:0,correct:0,wrong:0,total:0,missed:{},last:''});
+  const L=p.levels[modeId]||(p.levels[modeId]={plays:0,correct:0,wrong:0,total:0,firstTry:0,qs:0,missed:{},last:''});
+  if(L.firstTry==null)L.firstTry=0; if(L.qs==null)L.qs=0;
   L.plays++; L.correct+=correct||0; L.wrong+=wrong||0; L.total+=(correct||0)+(wrong||0);
+  L.qs+=correct||0; L.firstTry+=firstTry||0;
   L.last=new Date().toISOString();
   if(!p.log)p.log=[];
-  p.log.push({at:L.last,modeId,correct:correct||0,wrong:wrong||0,explored:!!explored,missed:missed||{}});
+  p.log.push({at:L.last,modeId,correct:correct||0,wrong:wrong||0,firstTry:firstTry||0,explored:!!explored,missed:missed||{}});
   if(p.log.length>60)p.log=p.log.slice(-60);
   save();
 }
@@ -529,6 +531,7 @@ function challengeLabel(c){
   if(c.type==='fixed' && c.form==='add1') return `${c.a} + □ = 10`;
   if(c.type==='fixed' && c.form==='add2') return `□ + ${c.a} = 10`;
   if(c.type==='fixed' && c.form==='sub')  return `10 − ${c.a} = □`;
+  if(c.type==='fixed' && c.form==='subm') return `10 − □ = ${c.shown}`;
   if(c.type==='fixed' && c.given!=null)   return `${c.given} + □ = 10`;   // triangle
   if(c.type==='sum')                      return `□ + □ = 10`;            // rainbow pairs
   return null;
@@ -538,6 +541,7 @@ function problemLabel(q){
   if(q&&q.parts) return q.parts.map(x=>x==='▢'?'□':x).join(' ');
   return null;
 }
+function markMiss(){ if(typeof round==='object'&&round){ round.wrongOn=round.wrongOn||{}; round.wrongOn[round.index||0]=true; } }
 function noteMiss(modeId,item){
   const p=P(); if(!p.levels)p.levels={};
   const L=p.levels[modeId]||(p.levels[modeId]={plays:0,correct:0,wrong:0,total:0,missed:{},last:''});
@@ -547,8 +551,8 @@ function noteMiss(modeId,item){
 
 /* ======================= PROGRESS REPORTS ======================= */
 function fmtDate(iso){ try{ return new Date(iso).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){ return iso; } }
-const LEVEL_ORDER=['friendsChart','pairs','triangle','equation','teensChart','teensSpeed','doublesChart','doublesSpeed','hundred','hopper','quick'];
-const LEVEL_GROUP={friendsChart:'Friends of Ten',pairs:'Friends of Ten',triangle:'Friends of Ten',equation:'Friends of Ten',
+const LEVEL_ORDER=['friendsChart','pairs','triangle','equation','missing','teensChart','teensSpeed','doublesChart','doublesSpeed','hundred','hopper','quick'];
+const LEVEL_GROUP={friendsChart:'Friends of Ten',pairs:'Friends of Ten',triangle:'Friends of Ten',equation:'Friends of Ten',missing:'Friends of Ten',
   teensChart:'Teen Numbers',teensSpeed:'Teen Numbers',doublesChart:'Doubles',doublesSpeed:'Doubles',
   hundred:'Counting by Tens',hopper:'Counting by Tens',quick:'Counting by Tens'};
 function playerReport(key){
@@ -569,10 +573,14 @@ function playerReport(key){
     if(LEVEL_GROUP[id]!==group){ group=LEVEL_GROUP[id]; lines.push(`  — ${group} —`); }
     const L=(p.levels||{})[id];
     if(!L||!L.total){ lines.push(`  ${M.icon} ${M.name} — not tried yet`); return; }
-    const pct=Math.round(L.correct/L.total*100);
+    const qs=L.qs||L.correct||0;
+    const hasFT=(L.firstTry!=null&&qs>0);
+    const pct=hasFT?Math.round(L.firstTry/qs*100):Math.round(L.correct/L.total*100);
     played.push({name:M.name,icon:M.icon,pct,total:L.total});
     lines.push(`  ${M.icon} ${M.name}`);
-    lines.push(`      played ${L.plays}x · ${L.correct} right, ${L.wrong} wrong (${pct}%) · last ${L.last?fmtDate(L.last):'—'}`);
+    lines.push(hasFT
+      ? `      played ${L.plays}x · ${qs} questions · got ${L.firstTry} right first try (${pct}%) · ${L.wrong} extra ${L.wrong===1?'try':'tries'} · last ${L.last?fmtDate(L.last):'—'}`
+      : `      played ${L.plays}x · ${L.correct} right, ${L.wrong} wrong (${pct}%) · last ${L.last?fmtDate(L.last):'—'}`);
     const miss=Object.keys(L.missed||{}).map(k=>({k,n:L.missed[k]})).sort((a,b)=>b.n-a.n).slice(0,6);
     if(miss.length) lines.push(`      tripped up on: ${miss.map(x=>`${x.k}${x.n>1?` (${x.n}x)`:''}`).join(', ')}`);
   });
@@ -582,8 +590,8 @@ function playerReport(key){
   const solid=played.filter(x=>x.total>=5);
   if(solid.length){
     const hard=solid.slice().sort((a,b)=>a.pct-b.pct)[0], easy=solid.slice().sort((a,b)=>b.pct-a.pct)[0];
-    lines.push(`HARDEST SO FAR: ${hard.icon} ${hard.name} (${hard.pct}% right)`);
-    if(easy.name!==hard.name) lines.push(`STRONGEST: ${easy.icon} ${easy.name} (${easy.pct}% right)`);
+    lines.push(`HARDEST SO FAR: ${hard.icon} ${hard.name} (${hard.pct}% right first try)`);
+    if(easy.name!==hard.name) lines.push(`STRONGEST: ${easy.icon} ${easy.name} (${easy.pct}% right first try)`);
     const skipped=LEVEL_ORDER.filter(id=>!((p.levels||{})[id]||{}).total).map(id=>MODES[id]&&MODES[id].name).filter(Boolean);
     if(skipped.length) lines.push(`NOT TRIED YET: ${skipped.join(', ')}`);
     lines.push('');
@@ -606,8 +614,9 @@ function progressPayload(){
     if(!today.length) return;                 // nothing today -> not in this report
     // roll today's plays up per level
     const levels={};
-    today.forEach(e=>{ const id=e.modeId; const L=levels[id]||(levels[id]={plays:0,correct:0,wrong:0,total:0,missed:{},last:e.at});
-      L.plays++; L.correct+=e.correct||0; L.wrong+=e.wrong||0; L.total+=(e.correct||0)+(e.wrong||0); if(e.at>L.last)L.last=e.at;
+    today.forEach(e=>{ const id=e.modeId; const L=levels[id]||(levels[id]={plays:0,correct:0,wrong:0,total:0,firstTry:0,qs:0,missed:{},last:e.at});
+      L.plays++; L.correct+=e.correct||0; L.wrong+=e.wrong||0; L.total+=(e.correct||0)+(e.wrong||0);
+      L.qs+=e.correct||0; L.firstTry+=e.firstTry||0; if(e.at>L.last)L.last=e.at;
       // carry the specific missed problems recorded on the master level (best-effort)
       if(e.missed){ for(const k in e.missed){ L.missed[k]=(L.missed[k]||0)+e.missed[k]; } }
     });
@@ -690,10 +699,12 @@ function renderHome(){
       {key:'pairs',       ico:'🌈',title:'Rainbow Pairs',       desc:'Drag two to make 10', grad:'linear-gradient(135deg,#ff5fa2,#ff9a5f)'},
       {key:'triangle',    ico:'🔺',title:'Number Triangle',     desc:'Fill the bond',       grad:'linear-gradient(135deg,#7c5cff,#b48af0)'},
       {key:'equation',    ico:'🟰',title:'Build the Equation',  desc:'7 + ▢ = 10',          grad:'linear-gradient(135deg,#3fa34d,#6ec46f)'},
+      {key:'missing',     ico:'🕵️',title:'Missing Number Mission',desc:'▢ + 6 = 10',         grad:'linear-gradient(135deg,#0f8b8d,#4fc3c5)'},
       {key:'teensChart',  ico:'🚀',title:'Teen Numbers Chart',  desc:'10 and some ones',    grad:'linear-gradient(135deg,#5b54d6,#8a7bff)'},
       {key:'teensSpeed',  ico:'🛰️',title:'Teen Speed',          desc:'10+6, 16−6, 16−10',   grad:'linear-gradient(135deg,#3d7dff,#6aa0ff)'},
       {key:'doublesChart',ico:'🐉',title:'Doubles Chart',       desc:'Same number twice',   grad:'linear-gradient(135deg,#e0552b,#ff8a3d)'},
       {key:'doublesSpeed',ico:'💥',title:'Doubles Speed',       desc:'6+6, 12−6',           grad:'linear-gradient(135deg,#d1345b,#ff6f91)'},
+      {key:'hundred',     ico:'🧮',title:'Hundred Chart Hops',  desc:'Find +10 on the chart',grad:'linear-gradient(135deg,#8e6bd6,#b79aef)'},
       {key:'hopper',      ico:'🐸',title:'Ten Hopper',          desc:'+10 / −10 jumps',     grad:'linear-gradient(135deg,#3fa34d,#6ec46f)'},
       {key:'quick',       ico:'⚡',title:'Quick Tens',          desc:'10 more / 10 less',   grad:'linear-gradient(135deg,#f5a623,#ffce5c)'}
     ])}
@@ -703,11 +714,6 @@ function renderHome(){
       <button class="refcard" data-trail="placeValue">
         <span class="refico">🧱</span>
         <span><span class="reft">Place-Value Playground</span><br><span class="refd">See how tens &amp; ones build a number</span></span>
-      </button>
-      <button class="refcard" data-trail="hundred" style="margin-top:10px">
-        <span class="refico">🧮</span>
-        <span><span class="reft">Hundred Chart Hops</span><br><span class="refd">Hop +10 down a column on the hundred chart</span></span>
-        ${levelDone('hundred')?'<span class="ncheck">✓</span>':''}
       </button>
     </div>
     <div style="text-align:center;margin:22px 0 6px"><a class="homelink" href="/">🏠 All games</a></div>`;
@@ -807,6 +813,7 @@ const MODES={
   pairs:       {scene:'forest',name:'Rainbow Pairs',       icon:'🌈',kind:'slotgame'},
   triangle:    {scene:'forest',name:'Number Triangle',     icon:'🔺',kind:'slotgame'},
   equation:    {scene:'forest',name:'Build the Equation',  icon:'🟰',kind:'slotgame'},
+  missing:     {scene:'forest',name:'Missing Number Mission',icon:'🕵️',kind:'slotgame'},
   teensChart:  {scene:'space', name:'Teen Numbers Chart',  icon:'🚀',kind:'chart',chartType:'teens'},
   teensSpeed:  {scene:'space', name:'Teen Speed',          icon:'🛰️',kind:'numpad'},
   doublesChart:{scene:'cave',  name:'Doubles Chart',       icon:'🐉',kind:'chart',chartType:'doubles'},
@@ -852,7 +859,14 @@ function buildChallenge(mode){
     return {mode,type:'sum',target:10,tray,hint:"Those two don't make 10 — find a pair that adds up to 10!"};}
   if(mode==='triangle'){const g=friendA(),ans=10-g,side=Math.random()<.5?'left':'right';const tray=shuffle([ans,...distractorsExcl([ans],3)]);
     return {mode,type:'fixed',given:g,ans,side,tray,hint:`What goes with ${g} to make 10?`};}
-  const a=friendA(),ans=10-a,form=pick(['add1','add2','sub']);const tray=shuffle([ans,...distractorsExcl([ans],3)]);
+  if(mode==='missing'){
+    const a=friendA(),form=pick(['add2','add2','subm']);
+    if(form==='subm'){const ans=a,shown=10-a;const tray=shuffle([ans,...distractorsExcl([ans],3)]);
+      return {mode,type:'fixed',form,a,ans,shown,tray,hint:`10 take away WHAT leaves ${shown}? The missing number is hiding in the middle.`};}
+    const ans=10-a;const tray=shuffle([ans,...distractorsExcl([ans],3)]);
+    return {mode,type:'fixed',form,a,ans,tray,hint:`The blank is FIRST this time. What goes with ${a} to make 10?`};
+  }
+  const a=friendA(),ans=10-a,form=pick(['add1','sub']);const tray=shuffle([ans,...distractorsExcl([ans],3)]);
   return {mode,type:'fixed',form,a,ans,tray,hint:`What is ${a}'s friend to make 10?`};
 }
 function buildRound(mode){const out=[],seen=new Set();let g=0;
@@ -948,6 +962,7 @@ function challengeHTML(c){
   let row;
   if(c.form==='add1')row=`<span>${c.a}</span><span>+</span><span class="slot" data-slot data-expect="${c.ans}"></span><span>=</span><span>10</span>`;
   else if(c.form==='add2')row=`<span class="slot" data-slot data-expect="${c.ans}"></span><span>+</span><span>${c.a}</span><span>=</span><span>10</span>`;
+  else if(c.form==='subm')row=`<span>10</span><span>−</span><span class="slot" data-slot data-expect="${c.ans}"></span><span>=</span><span>${c.shown}</span>`;
   else row=`<span>10</span><span>−</span><span>${c.a}</span><span>=</span><span class="slot" data-slot data-expect="${c.ans}"></span>`;
   return `<div class="prompt">Drag the missing number</div><div class="eqrow">${row}</div><div class="tray" id="tray">${c.tray.map(tileHTML).join('')}</div>`;
 }
@@ -1006,7 +1021,7 @@ function onDrop(el,slot){
   const c=round.challenges[round.index];
   if(c.type==='fixed'){
     if(+el.dataset.v===+slot.dataset.expect){slot.classList.add('over');el.classList.add('good','locked');feedbackMsg('');solveStep(true);}
-    else{if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, challengeLabel(c) || (c.item!=null?String(c.item):null));}busy=true;setTimeout(()=>{ejectSlot(slot);mascotReact('encourage');feedbackMsg(c.hint);busy=false;},260);}
+    else{if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, challengeLabel(c) || (c.item!=null?String(c.item):null));}busy=true;setTimeout(()=>{ejectSlot(slot);mascotReact('encourage');feedbackMsg(c.hint);busy=false;},260);}
     return true;
   }
   // sum (pairs)
@@ -1014,7 +1029,7 @@ function onDrop(el,slot){
   if(slots.every(s=>s.classList.contains('filled'))){
     const sum=slots.reduce((a,s)=>a+(+s.dataset.val),0);
     if(sum===c.target){slots.forEach(s=>{const t=s.firstElementChild;if(t)t.classList.add('good','locked');});feedbackMsg('');solveStep(true);}
-    else{if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, challengeLabel(c) || (c.target!=null?String(c.target):null));}busy=true;setTimeout(()=>{slots.forEach(ejectSlot);mascotReact('encourage');feedbackMsg(c.hint);busy=false;},300);}
+    else{if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, challengeLabel(c) || (c.target!=null?String(c.target):null));}busy=true;setTimeout(()=>{slots.forEach(ejectSlot);mascotReact('encourage');feedbackMsg(c.hint);busy=false;},300);}
   }
   return true;
 }
@@ -1044,7 +1059,7 @@ function checkBond(k){
     const bond=document.getElementById('bond'+k);if(bond)bond.classList.add('done');
     feedbackMsg('');solveStep(false);
   }else{
-    if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, (round.M&&round.M.kind==='slotgame'&&round.challenges?challengeLabel(round.challenges[round.index]):null) || (target!=null?String(target):null));}
+    if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, (round.M&&round.M.kind==='slotgame'&&round.challenges?challengeLabel(round.challenges[round.index]):null) || (target!=null?String(target):null));}
     busy=true;setTimeout(()=>{slots.forEach(ejectSlot);mascotReact('encourage');feedbackMsg(msg);busy=false;},300);
   }
 }
@@ -1053,6 +1068,7 @@ function checkBond(k){
 function solveStep(advance){
   busy=true;mascotReact('happy');fxSparkles(0.4);
   const pl=P();pl.stars++;pl.gems=(pl.gems||0)+1;round.correct=(round.correct||0)+1;save();
+  if(!(round.wrongOn&&round.wrongOn[round.index])) round.firstTry=(round.firstTry||0)+1;
   const stones=$('#path').querySelectorAll('.stone');
   if(stones[round.index]){stones[round.index].classList.add('done');stones[round.index].textContent='⭐';}
   round.index++;
@@ -1064,7 +1080,7 @@ function solveStep(advance){
 
 /* ============================================================ COMPLETE + REWARDS ============================================================ */
 function finishRound(){
-  if(round && round.M && round.M.kind!=='explore'){ logLevel(round.mode, round.correct||0, round.wrong||0, false, round.missed||{}); maybeSendReport(); }
+  if(round && round.M && round.M.kind!=='explore'){ logLevel(round.mode, round.correct||0, round.wrong||0, false, round.missed||{}, round.firstTry||0); maybeSendReport(); }
   setScene('');celebrate(true);driftSky();
   movementBreak(showTrophy);
 }
@@ -1098,6 +1114,17 @@ const YAYS=['Yes! ⭐','Nailed it! 🌟','Boom! 💥','Great! 🎉','You got it!
 const ONES_TINT=['#ffe3ec','#fff0d6','#fffbd1','#e6f9df','#dcf5f0','#ddefff','#e8e4ff','#f6e0ff','#ffe6f2','#f0ede4'];
 
 /* ---- generators ---- */
+(function(){const st=document.createElement('style');st.textContent=`
+.peek{margin:10px auto 12px;max-width:520px}
+.peekgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.peekgrid span{background:rgba(255,255,255,.72);border-radius:12px;padding:6px 4px;text-align:center;
+  font-family:var(--disp);font-weight:600;font-size:.92rem;color:var(--ink-soft);box-shadow:0 2px 0 rgba(43,33,64,.08)}
+.peekgrid b{display:block;font-size:1.18rem;color:var(--ink);line-height:1.1}
+.peeknote{margin-top:7px;text-align:center;font-family:var(--disp);font-weight:600;font-size:.82rem;color:var(--ink-soft);opacity:.85}
+.peek.gone{text-align:center;font-family:var(--disp);font-weight:700;font-size:.9rem;color:var(--ink-soft);
+  background:rgba(255,255,255,.5);border-radius:14px;padding:9px 12px}
+@media (max-width:420px){.peekgrid{grid-template-columns:repeat(3,1fr)}.peekgrid span{font-size:.82rem}}
+`;document.head.appendChild(st);})();
 function buildTeensSpeed(){const out=[],used=new Set();let g=0;
   while(out.length<10&&g<140){g++;const d=1+rnd(9);const form=pick(['add','subd','sub10']);
     let parts,answer,hint;
@@ -1124,6 +1151,22 @@ function buildHops(){const out=[];
     out.push({start,dir,ans,options:shuffle([ans,...wrongs])});}
   return out;}
 
+/* ---- fading reference strip: visible for the first PEEK_N questions, then gone ---- */
+const PEEK_N=3;
+function peekRows(mode){
+  if(mode==='teensSpeed') return [1,2,3,4,5,6,7,8,9].map(d=>`10+${d}<b>${10+d}</b>`);
+  if(mode==='doublesSpeed') return [1,2,3,4,5,6,7,8,9].map(d=>`${d}+${d}<b>${2*d}</b>`);
+  return null;
+}
+function peekHTML(){
+  const r=round; if(!r) return '';
+  const rows=peekRows(r.mode); if(!rows) return '';
+  const left=PEEK_N-r.index;
+  if(left<=0) return `<div class="peek gone">🫣 Chart's away — you've got these in your head now!</div>`;
+  return `<div class="peek"><div class="peekgrid">${rows.map(t=>`<span>${t}</span>`).join('')}</div>
+    <div class="peeknote">Peek while you can — the chart hides after ${left} more question${left===1?'':'s'}.</div></div>`;
+}
+
 /* ---- header helper ---- */
 function modeHead(){const r=round;return `<div class="mhead"><div class="title">${r.M.icon} ${r.M.name}</div><button class="iconbtn" id="backBtn">✕</button></div>
     <div style="text-align:center;font-family:var(--disp);font-weight:700;margin-bottom:4px">${teamLine()} · ${Math.min(r.index+1,r.total)} of ${r.total}</div>
@@ -1137,7 +1180,7 @@ function renderNumpad(){
   const eq=q.parts?`<div class="eq">${q.parts.map(x=>x==='▢'?`<span class="blank empty" id="blank">?</span>`:`<span>${x}</span>`).join('')}</div>`
                   :`<div class="eq"><span class="blank empty" id="blank">?</span></div>`;
   screen().innerHTML=modeHead()+`
-    <div class="card">${mascotHTML()}${q.prompt?`<div class="prompt">${q.prompt}</div>`:''}${eq}${padHTML()}
+    <div class="card">${mascotHTML()}${q.prompt?`<div class="prompt">${q.prompt}</div>`:''}${eq}${peekHTML()}${padHTML()}
       <div class="feedback" id="feedback" style="min-height:26px;text-align:center;font-weight:800;color:var(--ink-soft);margin-top:8px"></div></div>`;
   $('#backBtn').addEventListener('click',renderHome);positionToken();bindPad(q);
 }
@@ -1149,7 +1192,7 @@ function bindPad(q){
     else if(key==='go'){
       if(round.input==='')return;
       if(parseInt(round.input,10)===q.answer){$('#feedback').innerHTML=`<div class="yay">${pick(YAYS)}</div>`;solveStep(true);}
-      else{if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, problemLabel(q) || (q.q!=null?String(q.q):null));}$('#feedback').innerHTML=`<div class="hintbox">${q.hint}</div>`;mascotReact('encourage');round.input='';draw();}
+      else{if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, problemLabel(q) || (q.q!=null?String(q.q):null));}$('#feedback').innerHTML=`<div class="hintbox">${q.hint}</div>`;mascotReact('encourage');round.input='';draw();}
       return;
     }else if(round.input.length<3)round.input=(round.input==='0'?'':round.input)+key;
     draw();
@@ -1180,7 +1223,7 @@ function renderHopper(){
     if(busy)return;
     if(+b.dataset.v===h.ans){frog.classList.add('jump');frog.style.left=frogXY(h,h.ans)+'%';setTimeout(()=>frog.classList.remove('jump'),850);
       $('#feedback').innerHTML=`<div class="yay">${pick(YAYS)}</div>`;solveStep(true);}
-    else{if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, `${h.start} ${h.dir>0?'+':'−'}10 = □`);}$('#feedback').innerHTML=`<div class="hintbox">A hop of ${h.dir>0?'+10':'−10'} keeps the SAME ones digit — ${h.start} keeps its ${h.start%10}!</div>`;mascotReact('encourage');}
+    else{if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, `${h.start} ${h.dir>0?'+':'−'}10 = □`);}$('#feedback').innerHTML=`<div class="hintbox">A hop of ${h.dir>0?'+10':'−10'} keeps the SAME ones digit — ${h.start} keeps its ${h.start%10}!</div>`;mascotReact('encourage');}
   }));
 }
 
@@ -1210,7 +1253,7 @@ function wireHundred(){
       if(round&&round.index<round.total)updateHundredPrompt();
     }else if(!c.classList.contains('lit')&&!c.classList.contains('start')){
       c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),400);
-      if(round){round.wrong=(round.wrong||0)+1;noteMiss(round.mode, `${r.start} ${r.dir>0?'+':'−'}10 = □`);}$('#feedback').innerHTML=`<div class="hintbox">${r.dir>0?'+10 slides one row DOWN — same column!':'−10 slides one row UP — same column!'}</div>`;mascotReact('encourage');
+      if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, `${r.start} ${r.dir>0?'+':'−'}10 = □`);}$('#feedback').innerHTML=`<div class="hintbox">${r.dir>0?'+10 slides one row DOWN — same column!':'−10 slides one row UP — same column!'}</div>`;mascotReact('encourage');
     }
   }));
 }

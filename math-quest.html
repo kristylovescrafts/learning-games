@@ -1083,7 +1083,7 @@ function solveStep(advance){
   round.index++;
   const token=$('#token');if(token){token.classList.add('hop');setTimeout(()=>positionToken(),30);setTimeout(()=>token.classList.remove('hop'),480);}
   if(round.index>=round.total){setTimeout(()=>finishRound(),750);return;}
-  if(advance){setTimeout(()=>{round.render();},900);}
+  if(advance){setTimeout(()=>{round.render();},round.stepDelay||900);}
   else{setTimeout(()=>{busy=false;},650);}
 }
 
@@ -1156,6 +1156,11 @@ const ONES_TINT=['#ffe3ec','#fff0d6','#fffbd1','#e6f9df','#dcf5f0','#ddefff','#e
 .pvop{flex:0 0 84px;font-family:var(--disp);font-weight:700;font-size:.7rem;color:#16978b;line-height:1.15}
 .pvsame{flex:1;text-align:right;font-family:var(--disp);font-weight:700;font-size:.7rem;color:#b07800;
   text-transform:uppercase;letter-spacing:.04em}
+.fulleq{margin-top:8px;text-align:center;font-family:var(--disp);font-weight:700;font-size:1.7rem;color:var(--ink);
+  animation:eqpop .35s ease-out both}
+.fulleq span{color:#16978b}
+.fulleq b{color:#2c7a4b;font-size:2rem}
+@keyframes eqpop{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
 `;document.head.appendChild(st);})();
 function buildTeensSpeed(){const out=[],used=new Set();let g=0;
   while(out.length<10&&g<140){g++;const d=1+rnd(9);const form=pick(['add','subd','sub10']);
@@ -1276,11 +1281,11 @@ function hopChartHTML(h,avatar){
   </div>`;
 }
 function renderHopper(){
-  const r=round,h=r.hops[r.index],p=state.players[r.who];setScene(r.M.scene);busy=false;
+  const r=round,h=r.hops[r.index],p=state.players[r.who];setScene(r.M.scene);busy=false;r.stepDelay=null;
   screen().innerHTML=modeHead()+`
     <div class="card">${mascotHTML()}
       <div class="prompt">${p.avatar} is on <span class="big">${h.start}</span>. Hop <span class="big">${h.dir>0?'+10':'−10'}</span>! Where does it land?</div>
-      ${hopChartHTML(h,p.avatar)}
+      ${r.index<PEEK_N?hopChartHTML(h,p.avatar)+`<div class="peeknote">${PEEK_N-r.index===1?'Last peek — the hint goes after this one!':`The hint goes after ${PEEK_N-r.index-1} more question${PEEK_N-r.index-1===1?'':'s'}.`}</div>`:`<div class="peek gone">🫣 Hint's away — you've got these in your head now!</div>`}
       <div class="choices">${h.options.map(o=>`<button class="choice" data-v="${o}">${o}</button>`).join('')}</div>
       <div class="feedback" id="feedback" style="min-height:26px;text-align:center;font-weight:800;color:var(--ink-soft);margin-top:8px"></div></div>`;
   $('#backBtn').addEventListener('click',renderHome);positionToken();
@@ -1288,7 +1293,9 @@ function renderHopper(){
     if(busy)return;
     if(+b.dataset.v===h.ans){const tc=document.getElementById('hopTens');
       if(tc){tc.innerHTML=`${Math.floor(h.ans/10)}<i>tens</i>`;tc.classList.remove('gap');}
-      $('#feedback').innerHTML=`<div class="yay">${pick(YAYS)}</div>`;solveStep(true);}
+      $('#feedback').innerHTML=`<div class="yay">${pick(YAYS)}</div>
+        <div class="fulleq">${h.start} <span>${h.dir>0?'+':'−'} 10</span> = <b>${h.ans}</b></div>`;
+      round.stepDelay=2100; solveStep(true);}
     else{if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, `${h.start} ${h.dir>0?'+':'−'}10 = □`);}$('#feedback').innerHTML=`<div class="hintbox">A hop of ${h.dir>0?'+10':'−10'} keeps the SAME ones digit — ${h.start} keeps its ${h.start%10}!</div>`;mascotReact('encourage');}
   }));
 }

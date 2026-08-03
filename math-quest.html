@@ -541,6 +541,7 @@ function problemLabel(q){
   if(q&&q.parts) return q.parts.map(x=>x==='▢'?'□':x).join(' ');
   return null;
 }
+function mixOn(){ return !!state.mixForms; }
 function markMiss(){ if(typeof round==='object'&&round){ round.wrongOn=round.wrongOn||{}; round.wrongOn[round.index||0]=true; } }
 function noteMiss(modeId,item){
   const p=P(); if(!p.levels)p.levels={};
@@ -551,8 +552,8 @@ function noteMiss(modeId,item){
 
 /* ======================= PROGRESS REPORTS ======================= */
 function fmtDate(iso){ try{ return new Date(iso).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){ return iso; } }
-const LEVEL_ORDER=['friendsChart','pairs','triangle','equation','missing','teensChart','teensSpeed','doublesChart','doublesSpeed','hundred','hopper','quick'];
-const LEVEL_GROUP={friendsChart:'Friends of Ten',pairs:'Friends of Ten',triangle:'Friends of Ten',equation:'Friends of Ten',missing:'Friends of Ten',
+const LEVEL_ORDER=['friendsChart','pairs','equation','missing','teensChart','teensSpeed','doublesChart','doublesSpeed','hundred','hopper','quick'];
+const LEVEL_GROUP={friendsChart:'Friends of Ten',pairs:'Friends of Ten',equation:'Friends of Ten',missing:'Friends of Ten',
   teensChart:'Teen Numbers',teensSpeed:'Teen Numbers',doublesChart:'Doubles',doublesSpeed:'Doubles',
   hundred:'Counting by Tens',hopper:'Counting by Tens',quick:'Counting by Tens'};
 function playerReport(key){
@@ -697,9 +698,8 @@ function renderHome(){
     ${trailHTML([
       {key:'friendsChart',ico:'🔟',title:'Friends of Ten Chart',desc:'Build six 10s',      grad:'linear-gradient(135deg,#f6b93b,#ffd67a)'},
       {key:'pairs',       ico:'🌈',title:'Rainbow Pairs',       desc:'Drag two to make 10', grad:'linear-gradient(135deg,#ff5fa2,#ff9a5f)'},
-      {key:'triangle',    ico:'🔺',title:'Number Triangle',     desc:'Fill the bond',       grad:'linear-gradient(135deg,#7c5cff,#b48af0)'},
-      {key:'equation',    ico:'🟰',title:'Build the Equation',  desc:'7 + ▢ = 10',          grad:'linear-gradient(135deg,#3fa34d,#6ec46f)'},
-      {key:'missing',     ico:'🕵️',title:'Missing Number Mission',desc:'▢ + 6 = 10',         grad:'linear-gradient(135deg,#0f8b8d,#4fc3c5)'},
+      {key:'equation',    ico:'➖',title:'Take from Ten',       desc:'10 − 7 = ▢',          grad:'linear-gradient(135deg,#3fa34d,#6ec46f)'},
+      {key:'missing',     ico:'🕵️',title:'Missing Number Mission',desc:'Work backwards: ▢ + 6 = 10',grad:'linear-gradient(135deg,#0f8b8d,#4fc3c5)'},
       {key:'teensChart',  ico:'🚀',title:'Teen Numbers Chart',  desc:'10 and some ones',    grad:'linear-gradient(135deg,#5b54d6,#8a7bff)'},
       {key:'teensSpeed',  ico:'🛰️',title:'Teen Speed',          desc:'10+6, 16−6, 16−10',   grad:'linear-gradient(135deg,#3d7dff,#6aa0ff)'},
       {key:'doublesChart',ico:'🐉',title:'Doubles Chart',       desc:'Same number twice',   grad:'linear-gradient(135deg,#e0552b,#ff8a3d)'},
@@ -793,11 +793,16 @@ function gSettings(body,o){
         ${custom?'<button class="btn ghost" id="sReset">↩︎ Shared code</button>':''}
         <button class="btn ghost" id="sOff">${off?'🔒 Turn on':'🔓 Turn off here'}</button>
       </div><div id="sPinBox" style="margin-top:8px"></div></div>
+    <div class="gpcard"><div class="gph">🔀 Mix up the equation shapes</div>
+      <div class="gnote">Off (recommended to start): <b>Take from Ten</b> only asks 10 − 7 = ▢, and <b>Missing Number Mission</b> only asks the work-backwards kind. One idea per level while the pattern sinks in.<br>
+      On: both levels shuffle all four shapes together. Switch this on once Missing Number Mission sits above about 85% first try for a week — mixing is what makes it stick long-term.</div>
+      <div style="margin-top:8px"><button class="btn ghost" id="sMix">${mixOn()?'🔀 Mixing is ON':'📚 One shape per level (off)'}</button></div></div>
     <div class="gpcard"><div class="gph">✏️ Names & buddies</div>
       <button class="btn ghost" id="gEdit">Change names & avatars</button></div>
     <div class="gpcard"><div class="gph">🧹 Reset</div>
       <div class="gnote">Clears stars, gems, and progress for both kids.</div>
       <button class="btn ghost" id="gReset" style="margin-top:8px">Reset all progress</button></div>`;
+  body.querySelector('#sMix').onclick=()=>{ state.mixForms=!state.mixForms; save(); gSettings(body,o); };
   body.querySelector('#gEdit').onclick=()=>{o.remove();renderSetup();};
   body.querySelector('#gReset').onclick=()=>{if(body.querySelector('#gReset').dataset.a){['thomas','tori'].forEach(k=>{const p=state.players[k];p.stars=0;p.gems=0;p.rewardsClaimed=0;p.levels={};p.log=[];});save();o.remove();renderPick();}else{body.querySelector('#gReset').dataset.a='1';body.querySelector('#gReset').textContent='Tap again to confirm';}};
   const sp=body.querySelector('#sPin');if(sp)sp.onclick=()=>{body.querySelector('#sPinBox').innerHTML=`<input class="gin" id="pNew" inputmode="numeric" maxlength="4" placeholder="4 digits" style="width:120px;text-align:center;letter-spacing:6px"><button class="btn ghost" id="pSave">Save</button><div id="pN" class="gnote"></div>`;
@@ -811,8 +816,7 @@ const MODES={
   placeValue:  {scene:'forest',name:'Place-Value Playground',icon:'🧱',kind:'explore'},
   friendsChart:{scene:'forest',name:'Friends of Ten Chart',icon:'🔟',kind:'chart',chartType:'chart'},
   pairs:       {scene:'forest',name:'Rainbow Pairs',       icon:'🌈',kind:'slotgame'},
-  triangle:    {scene:'forest',name:'Number Triangle',     icon:'🔺',kind:'slotgame'},
-  equation:    {scene:'forest',name:'Build the Equation',  icon:'🟰',kind:'slotgame'},
+  equation:    {scene:'forest',name:'Take from Ten',       icon:'➖',kind:'slotgame'},
   missing:     {scene:'forest',name:'Missing Number Mission',icon:'🕵️',kind:'slotgame'},
   teensChart:  {scene:'space', name:'Teen Numbers Chart',  icon:'🚀',kind:'chart',chartType:'teens'},
   teensSpeed:  {scene:'space', name:'Teen Speed',          icon:'🛰️',kind:'numpad'},
@@ -860,14 +864,19 @@ function buildChallenge(mode){
   if(mode==='triangle'){const g=friendA(),ans=10-g,side=Math.random()<.5?'left':'right';const tray=shuffle([ans,...distractorsExcl([ans],3)]);
     return {mode,type:'fixed',given:g,ans,side,tray,hint:`What goes with ${g} to make 10?`};}
   if(mode==='missing'){
-    const a=friendA(),form=pick(['add2','add2','subm']);
+    const a=friendA(),form=pick(mixOn()?['add1','add2','sub','subm']:['add1','add2','add2','subm']);
+    if(form==='add1'||form==='sub'){const ans=10-a;const tray=shuffle([ans,...distractorsExcl([ans],3)]);
+      return {mode,type:'fixed',form,a,ans,tray,hint:`What is ${a}'s friend to make 10?`};}
     if(form==='subm'){const ans=a,shown=10-a;const tray=shuffle([ans,...distractorsExcl([ans],3)]);
       return {mode,type:'fixed',form,a,ans,shown,tray,hint:`10 take away WHAT leaves ${shown}? The missing number is hiding in the middle.`};}
     const ans=10-a;const tray=shuffle([ans,...distractorsExcl([ans],3)]);
     return {mode,type:'fixed',form,a,ans,tray,hint:`The blank is FIRST this time. What goes with ${a} to make 10?`};
   }
-  const a=friendA(),ans=10-a,form=pick(['add1','sub']);const tray=shuffle([ans,...distractorsExcl([ans],3)]);
-  return {mode,type:'fixed',form,a,ans,tray,hint:`What is ${a}'s friend to make 10?`};
+  const a=friendA(),form=mixOn()?pick(['add1','add2','sub','subm']):'sub';
+  if(form==='subm'){const ans=a,shown=10-a;const tray=shuffle([ans,...distractorsExcl([ans],3)]);
+    return {mode,type:'fixed',form,a,ans,shown,tray,hint:`10 take away WHAT leaves ${shown}?`};}
+  const ans=10-a;const tray=shuffle([ans,...distractorsExcl([ans],3)]);
+  return {mode,type:'fixed',form,a,ans,tray,hint:`Start at 10 and take ${a} away.`};
 }
 function buildRound(mode){const out=[],seen=new Set();let g=0;
   while(out.length<10&&g<140){g++;const c=buildChallenge(mode);const key=JSON.stringify([c.given,c.a,c.form,c.tray]);if(seen.has(key))continue;seen.add(key);out.push(c);}
@@ -934,7 +943,7 @@ function renderRound(){
   const c=r.challenges[r.index];
   screen().innerHTML=`
     <div class="mhead"><div class="title">${r.M.icon} ${r.M.name}</div><button class="iconbtn" id="backBtn">✕</button></div>
-    <div style="text-align:center;font-family:var(--disp);font-weight:700;margin-bottom:4px">${teamLine()} · ${Math.min(r.index+1,6)} of 6</div>
+    <div style="text-align:center;font-family:var(--disp);font-weight:700;margin-bottom:4px">${teamLine()} · ${Math.min(r.index+1,r.total)} of ${r.total}</div>
     ${pathHTML()}
     <div class="card">${mascotHTML()}<div id="body">${challengeHTML(c)}</div>
       <div class="feedback" id="feedback" style="min-height:26px;text-align:center;font-weight:800;color:var(--ink-soft);margin-top:10px"></div></div>`;
@@ -1115,15 +1124,28 @@ const ONES_TINT=['#ffe3ec','#fff0d6','#fffbd1','#e6f9df','#dcf5f0','#ddefff','#e
 
 /* ---- generators ---- */
 (function(){const st=document.createElement('style');st.textContent=`
-.peek{margin:10px auto 12px;max-width:520px}
-.peekgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.peekgrid span{background:rgba(255,255,255,.72);border-radius:12px;padding:6px 4px;text-align:center;
-  font-family:var(--disp);font-weight:600;font-size:.92rem;color:var(--ink-soft);box-shadow:0 2px 0 rgba(43,33,64,.08)}
-.peekgrid b{display:block;font-size:1.18rem;color:var(--ink);line-height:1.1}
-.peeknote{margin-top:7px;text-align:center;font-family:var(--disp);font-weight:600;font-size:.82rem;color:var(--ink-soft);opacity:.85}
+.peek{margin:8px auto 10px;max-width:420px}
+.bond{background:rgba(255,255,255,.66);border-radius:16px;padding:6px 4px 8px}
+.bondsvg{display:block;width:100%;max-width:300px;height:auto;margin:0 auto}
+.bwhole{fill:#ffd67a;stroke:#f0a500;stroke-width:4}
+.bpart{fill:#ffffff;stroke:rgba(43,33,64,.22);stroke-width:4}
+.btx{text-anchor:middle;dominant-baseline:central;font-family:Fredoka,var(--disp);font-weight:700;font-size:30px;fill:var(--ink)}
+.bwtx{font-size:34px}
+.bondcap{text-align:center;font-family:var(--disp);font-weight:600;font-size:.84rem;color:var(--ink-soft);padding:0 10px;line-height:1.3}
+.bondcap b{color:var(--ink)}
+.peeknote{margin-top:6px;text-align:center;font-family:var(--disp);font-weight:600;font-size:.8rem;color:var(--ink-soft);opacity:.85}
 .peek.gone{text-align:center;font-family:var(--disp);font-weight:700;font-size:.9rem;color:var(--ink-soft);
   background:rgba(255,255,255,.5);border-radius:14px;padding:9px 12px}
-@media (max-width:420px){.peekgrid{grid-template-columns:repeat(3,1fr)}.peekgrid span{font-size:.82rem}}
+/* Ten Hopper: a slice of the hundred chart instead of a number line */
+.hopgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:270px;margin:6px auto 2px}
+.hopcell{position:relative;border-radius:12px;padding:12px 0;text-align:center;font-family:var(--disp);
+  font-weight:700;font-size:1.3rem;color:var(--ink);box-shadow:0 2px 0 rgba(43,33,64,.1)}
+.hopcell.dim{opacity:.45}
+.hopcell.here{outline:4px solid #f0a500;outline-offset:-4px}
+.hopcell.target{outline:4px dashed #2ec4b6;outline-offset:-4px;color:#16978b}
+.hopcell .who{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:1.5rem;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.2))}
+.hopcap{text-align:center;font-family:var(--disp);font-weight:600;font-size:.84rem;color:var(--ink-soft);margin-top:8px}
 `;document.head.appendChild(st);})();
 function buildTeensSpeed(){const out=[],used=new Set();let g=0;
   while(out.length<10&&g<140){g++;const d=1+rnd(9);const form=pick(['add','subd','sub10']);
@@ -1152,19 +1174,45 @@ function buildHops(){const out=[];
   return out;}
 
 /* ---- fading reference strip: visible for the first PEEK_N questions, then gone ---- */
-const PEEK_N=3;
-function peekRows(mode){
-  if(mode==='teensSpeed') return [1,2,3,4,5,6,7,8,9].map(d=>`10+${d}<b>${10+d}</b>`);
-  if(mode==='doublesSpeed') return [1,2,3,4,5,6,7,8,9].map(d=>`${d}+${d}<b>${2*d}</b>`);
+const PEEK_N=4;
+function bondSVG(whole,a,b,cap){
+  return `<div class="bond"><svg viewBox="0 0 260 140" class="bondsvg">
+    <line x1="130" y1="46" x2="66" y2="104" stroke="rgba(43,33,64,.26)" stroke-width="6" stroke-linecap="round"/>
+    <line x1="130" y1="46" x2="194" y2="104" stroke="rgba(43,33,64,.26)" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="130" cy="36" r="30" class="bwhole"/>
+    <text x="130" y="36" class="btx bwtx">${whole}</text>
+    <circle cx="60" cy="110" r="26" class="bpart"/><text x="60" y="110" class="btx">${a}</text>
+    <circle cx="200" cy="110" r="26" class="bpart"/><text x="200" y="110" class="btx">${b}</text>
+  </svg><div class="bondcap">${cap}</div></div>`;
+}
+/* pick a worked example that is NOT the question on screen, so the hint teaches the
+   shape without handing over the answer */
+function peekExample(r){
+  const q=r.problems&&r.problems[r.index]; if(!q) return null;
+  if(r.mode==='teensSpeed'){
+    const nums=(q.parts||[]).filter(x=>typeof x==='number').concat([q.answer]);
+    const teen=Math.max(...nums), d=teen-10;
+    const opts=[1,2,3,4,5,6,7,8,9].filter(x=>x!==d);
+    const e=opts[r.index%opts.length];
+    return bondSVG(10+e,10,e,'Every teen number is <b>10 and some ones</b>. Split it that way and the answer falls out.');
+  }
+  if(r.mode==='doublesSpeed'){
+    const nums=(q.parts||[]).filter(x=>typeof x==='number');
+    const n=Math.min(...nums);
+    const opts=[2,3,4,5,6,7,8,9].filter(x=>x!==n);
+    const e=opts[r.index%opts.length];
+    return bondSVG(2*e,e,e,'A double splits into <b>two equal parts</b>.');
+  }
   return null;
 }
 function peekHTML(){
   const r=round; if(!r) return '';
-  const rows=peekRows(r.mode); if(!rows) return '';
+  if(r.mode!=='teensSpeed'&&r.mode!=='doublesSpeed') return '';
   const left=PEEK_N-r.index;
-  if(left<=0) return `<div class="peek gone">🫣 Chart's away — you've got these in your head now!</div>`;
-  return `<div class="peek"><div class="peekgrid">${rows.map(t=>`<span>${t}</span>`).join('')}</div>
-    <div class="peeknote">Peek while you can — the chart hides after ${left} more question${left===1?'':'s'}.</div></div>`;
+  if(left<=0) return `<div class="peek gone">🫣 Hint's away — you've got these in your head now!</div>`;
+  const ex=peekExample(r); if(!ex) return '';
+  return `<div class="peek">${ex}
+    <div class="peeknote">${left===1?'Last peek — the hint goes after this one!':`Here's how it works — the hint goes after ${left-1} more question${left-1===1?'':'s'}.`}</div></div>`;
 }
 
 /* ---- header helper ---- */
@@ -1209,19 +1257,36 @@ function lineSVG(h){
   svg+=`<path d="M ${x1} 105 Q ${(x1+x2)/2} 40 ${x2} 105" fill="none" stroke="#2ec4b6" stroke-width="4" stroke-dasharray="7 7" stroke-linecap="round"/><text x="${(x1+x2)/2}" y="34" text-anchor="middle" font-family="Fredoka" font-weight="700" font-size="20" fill="#16978b">${h.dir>0?'+10':'−10'}</text></svg>`;
   return svg;}
 function frogXY(h,val){const lo=Math.floor(Math.min(h.start,h.ans)/10)*10-10,hi=lo+50;return (20+(val-lo)/(hi-lo)*560)/600*100;}
+function hopChartHTML(h,avatar){
+  const col=(h.start-1)%10, row=Math.floor((h.start-1)/10);
+  const c0=Math.min(Math.max(col-1,0),7);
+  const rows=h.dir>0?[row,row+1]:[row-1,row];
+  let cells='';
+  rows.forEach(rw=>{ for(let c=c0;c<c0+3;c++){
+    const n=rw*10+c+1;
+    const isStart=(n===h.start), isTarget=(n===h.ans);
+    const cls='hopcell'+(isStart?' here':'')+(isTarget?' target':'')+(!isStart&&!isTarget?' dim':'');
+    const id=isStart?' id="hopHere"':isTarget?' id="hopTarget"':'';
+    cells+=`<div class="${cls}"${id} style="background:${ONES_TINT[n%10]}">${isTarget?'?':n}${isStart?`<span class="who">${avatar}</span>`:''}</div>`;
+  }});
+  return `<div class="hopgrid">${cells}</div>
+    <div class="hopcap">Same column, ${h.dir>0?'one row <b>down</b>':'one row <b>up</b>'} — the ones digit never changes.</div>`;
+}
 function renderHopper(){
   const r=round,h=r.hops[r.index],p=state.players[r.who];setScene(r.M.scene);busy=false;
   screen().innerHTML=modeHead()+`
     <div class="card">${mascotHTML()}
       <div class="prompt">${p.avatar} is on <span class="big">${h.start}</span>. Hop <span class="big">${h.dir>0?'+10':'−10'}</span>! Where does it land?</div>
-      <div class="nl" id="nl">${lineSVG(h)}<div class="frog" id="frog">${p.avatar}</div></div>
+      ${hopChartHTML(h,p.avatar)}
       <div class="choices">${h.options.map(o=>`<button class="choice" data-v="${o}">${o}</button>`).join('')}</div>
       <div class="feedback" id="feedback" style="min-height:26px;text-align:center;font-weight:800;color:var(--ink-soft);margin-top:8px"></div></div>`;
   $('#backBtn').addEventListener('click',renderHome);positionToken();
-  const frog=$('#frog');frog.style.left=frogXY(h,h.start)+'%';frog.style.top='73%';
   document.querySelectorAll('.choice').forEach(b=>b.addEventListener('click',()=>{
     if(busy)return;
-    if(+b.dataset.v===h.ans){frog.classList.add('jump');frog.style.left=frogXY(h,h.ans)+'%';setTimeout(()=>frog.classList.remove('jump'),850);
+    if(+b.dataset.v===h.ans){const tc=document.getElementById('hopTarget');
+      if(tc){tc.textContent=h.ans;tc.classList.remove('target');tc.classList.add('here');
+        const w=document.createElement('span');w.className='who';w.textContent=p.avatar;tc.appendChild(w);
+        const sc=document.getElementById('hopHere');if(sc){sc.classList.remove('here');const ow=sc.querySelector('.who');if(ow)ow.remove();}}
       $('#feedback').innerHTML=`<div class="yay">${pick(YAYS)}</div>`;solveStep(true);}
     else{if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, `${h.start} ${h.dir>0?'+':'−'}10 = □`);}$('#feedback').innerHTML=`<div class="hintbox">A hop of ${h.dir>0?'+10':'−10'} keeps the SAME ones digit — ${h.start} keeps its ${h.start%10}!</div>`;mascotReact('encourage');}
   }));

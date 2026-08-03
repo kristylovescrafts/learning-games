@@ -173,8 +173,8 @@ const META={
   mathQuest:{ title:"🔢 Math Quest", order:[
     ["friendsChart","🔟","Friends of Ten Chart","Friends of Ten"],
     ["pairs","🌈","Rainbow Pairs","Friends of Ten"],
-    ["triangle","🔺","Number Triangle","Friends of Ten"],
-    ["equation","🟰","Build the Equation","Friends of Ten"],
+    ["triangle","🔺","Number Triangle","Friends of Ten",true],
+    ["equation","➖","Take from Ten","Friends of Ten"],
     ["missing","🕵️","Missing Number Mission","Friends of Ten"],
     ["teensChart","🚀","Teen Numbers Chart","Teen Numbers"],
     ["teensSpeed","🛰️","Teen Speed","Teen Numbers"],
@@ -228,11 +228,12 @@ function kidCard(app,player){
   const levels=player.levels||{};
   let rows='', group='';
   meta.order.forEach(m=>{
+    if(m[4] && !(levels[m[0]] && levels[m[0]].total)) return;   // retired level, no data this day
     if(m[3]!==group){ group=m[3]; rows+=`<div class="group">${group}</div>`; }
     rows+=levelRow(m, levels[m[0]]);
   });
   const tried=meta.order.filter(m=>m[0]!=='placeValue' && levels[m[0]] && levels[m[0]].total);
-  const notTried=meta.order.filter(m=>m[0]!=='placeValue' && (!levels[m[0]]||!levels[m[0]].total)).map(m=>m[2]);
+  const notTried=meta.order.filter(m=>m[0]!=='placeValue' && !m[4] && (!levels[m[0]]||!levels[m[0]].total)).map(m=>m[2]);
   // hardest / strongest
   let extra='';
   const lvPct=L=>{const c=L.correct||0,t=L.total||0,q=(L.qs!=null&&L.qs>0)?L.qs:c;

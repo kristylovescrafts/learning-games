@@ -1131,21 +1131,31 @@ const ONES_TINT=['#ffe3ec','#fff0d6','#fffbd1','#e6f9df','#dcf5f0','#ddefff','#e
 .bpart{fill:#ffffff;stroke:rgba(43,33,64,.22);stroke-width:4}
 .btx{text-anchor:middle;dominant-baseline:central;font-family:Fredoka,var(--disp);font-weight:700;font-size:30px;fill:var(--ink)}
 .bwtx{font-size:34px}
+.bgap{fill:#ffffff;stroke:#2ec4b6;stroke-width:4;stroke-dasharray:8 7}
+.bqm{fill:#16978b}
 .bondcap{text-align:center;font-family:var(--disp);font-weight:600;font-size:.84rem;color:var(--ink-soft);padding:0 10px;line-height:1.3}
 .bondcap b{color:var(--ink)}
 .peeknote{margin-top:6px;text-align:center;font-family:var(--disp);font-weight:600;font-size:.8rem;color:var(--ink-soft);opacity:.85}
 .peek.gone{text-align:center;font-family:var(--disp);font-weight:700;font-size:.9rem;color:var(--ink-soft);
   background:rgba(255,255,255,.5);border-radius:14px;padding:9px 12px}
-/* Ten Hopper: a slice of the hundred chart instead of a number line */
-.hopgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-width:270px;margin:6px auto 2px}
-.hopcell{position:relative;border-radius:12px;padding:12px 0;text-align:center;font-family:var(--disp);
-  font-weight:700;font-size:1.3rem;color:var(--ink);box-shadow:0 2px 0 rgba(43,33,64,.1)}
-.hopcell.dim{opacity:.45}
-.hopcell.here{outline:4px solid #f0a500;outline-offset:-4px}
-.hopcell.target{outline:4px dashed #2ec4b6;outline-offset:-4px;color:#16978b}
-.hopcell .who{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-size:1.5rem;
-  filter:drop-shadow(0 2px 2px rgba(0,0,0,.2))}
-.hopcap{text-align:center;font-family:var(--disp);font-weight:600;font-size:.84rem;color:var(--ink-soft);margin-top:8px}
+/* Ten Hopper: tens & ones, so the unchanged ones digit is impossible to miss.
+   Deliberately shaped NOT to resemble the tappable answer buttons below it. */
+.pv2{max-width:330px;margin:4px auto 2px;background:rgba(255,255,255,.6);border-radius:16px;padding:10px 12px}
+.pvrow{display:flex;align-items:center;gap:8px}
+.pvlab{flex:0 0 84px;font-family:var(--disp);font-weight:700;font-size:1.05rem;color:var(--ink)}
+.pvlab.dim{font-size:.8rem;font-weight:600;color:var(--ink-soft)}
+.pvcell{flex:1;border-radius:10px;padding:7px 0 4px;text-align:center;font-family:var(--disp);
+  font-weight:700;font-size:1.45rem;line-height:1;color:var(--ink)}
+.pvcell i{display:block;font-style:normal;font-size:.62rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;opacity:.65;margin-top:3px}
+.pvcell.tens{background:#e8e4ff}
+.pvcell.ones{background:#fff0d6}
+.pvcell.ones.keep{outline:3px solid #f0a500;outline-offset:-3px}
+.pvcell.gap{background:#fff;outline:3px dashed #2ec4b6;outline-offset:-3px;color:#16978b}
+.pvmid{display:flex;align-items:center;gap:8px;margin:6px 0}
+.pvop{flex:0 0 84px;font-family:var(--disp);font-weight:700;font-size:.7rem;color:#16978b;line-height:1.15}
+.pvsame{flex:1;text-align:right;font-family:var(--disp);font-weight:700;font-size:.7rem;color:#b07800;
+  text-transform:uppercase;letter-spacing:.04em}
 `;document.head.appendChild(st);})();
 function buildTeensSpeed(){const out=[],used=new Set();let g=0;
   while(out.length<10&&g<140){g++;const d=1+rnd(9);const form=pick(['add','subd','sub10']);
@@ -1153,15 +1163,15 @@ function buildTeensSpeed(){const out=[],used=new Set();let g=0;
     if(form==='add'){parts=[10,'+',d,'=','▢'];answer=10+d;hint='Ten and '+d+' more makes a teen number!';}
     else if(form==='subd'){parts=[10+d,'−',d,'=','▢'];answer=10;hint='Take the ones away and you land back on 10!';}
     else{parts=[10+d,'−',10,'=','▢'];answer=d;hint='Take the ten away — the ones are what is left!';}
-    const key=parts.join('');if(used.has(key))continue;used.add(key);out.push({parts,answer,hint});}
-  while(out.length<10){const d=1+rnd(9);out.push({parts:[10,'+',d,'=','▢'],answer:10+d,hint:'Ten and some more!'});}
+    const key=parts.join('');if(used.has(key))continue;used.add(key);out.push({parts,answer,hint,form,d});}
+  while(out.length<10){const d=1+rnd(9);out.push({parts:[10,'+',d,'=','▢'],answer:10+d,hint:'Ten and some more!',form:'add',d});}
   return out;}
 function buildDoublesSpeed(){const out=[],used=new Set();let g=0;
   while(out.length<10&&g<140){g++;const n=2+rnd(8);const sub=Math.random()<0.4;
     const parts=sub?[2*n,'−',n,'=','▢']:[n,'+',n,'=','▢'];const answer=sub?n:2*n;
     const key=parts.join('');if(used.has(key))continue;used.add(key);
-    out.push({parts,answer,hint:sub?`Half of ${2*n} is ${n}.`:`Double ${n} — count ${n} and ${n} more!`});}
-  while(out.length<10){const n=2+rnd(8);out.push({parts:[n,'+',n,'=','▢'],answer:2*n,hint:'Double it!'});}
+    out.push({parts,answer,hint:sub?`Half of ${2*n} is ${n}.`:`Double ${n} — count ${n} and ${n} more!`,form:sub?'sub':'add',n});}
+  while(out.length<10){const n=2+rnd(8);out.push({parts:[n,'+',n,'=','▢'],answer:2*n,hint:'Double it!',form:'add',n});}
   return out;}
 function buildQuickTens(){const out=[];
   for(let i=0;i<10;i++){const more=Math.random()<0.5;const n=more?(3+rnd(86)):(13+rnd(86));
@@ -1179,29 +1189,26 @@ function bondSVG(whole,a,b,cap){
   return `<div class="bond"><svg viewBox="0 0 260 140" class="bondsvg">
     <line x1="130" y1="46" x2="66" y2="104" stroke="rgba(43,33,64,.26)" stroke-width="6" stroke-linecap="round"/>
     <line x1="130" y1="46" x2="194" y2="104" stroke="rgba(43,33,64,.26)" stroke-width="6" stroke-linecap="round"/>
-    <circle cx="130" cy="36" r="30" class="bwhole"/>
-    <text x="130" y="36" class="btx bwtx">${whole}</text>
-    <circle cx="60" cy="110" r="26" class="bpart"/><text x="60" y="110" class="btx">${a}</text>
-    <circle cx="200" cy="110" r="26" class="bpart"/><text x="200" y="110" class="btx">${b}</text>
+    <circle cx="130" cy="36" r="30" class="bwhole${whole==='?'?' bgap':''}"/>
+    <text x="130" y="36" class="btx bwtx${whole==='?'?' bqm':''}">${whole}</text>
+    <circle cx="60" cy="110" r="26" class="bpart${a==='?'?' bgap':''}"/><text x="60" y="110" class="btx${a==='?'?' bqm':''}">${a}</text>
+    <circle cx="200" cy="110" r="26" class="bpart${b==='?'?' bgap':''}"/><text x="200" y="110" class="btx${b==='?'?' bqm':''}">${b}</text>
   </svg><div class="bondcap">${cap}</div></div>`;
 }
-/* pick a worked example that is NOT the question on screen, so the hint teaches the
-   shape without handing over the answer */
+/* The bond uses the SAME numbers as the question on screen, with the piece the child
+   has to find left blank. No mapping from one number to another. */
 function peekExample(r){
-  const q=r.problems&&r.problems[r.index]; if(!q) return null;
+  const q=r.problems&&r.problems[r.index]; if(!q||!q.form) return null;
   if(r.mode==='teensSpeed'){
-    const nums=(q.parts||[]).filter(x=>typeof x==='number').concat([q.answer]);
-    const teen=Math.max(...nums), d=teen-10;
-    const opts=[1,2,3,4,5,6,7,8,9].filter(x=>x!==d);
-    const e=opts[r.index%opts.length];
-    return bondSVG(10+e,10,e,'Every teen number is <b>10 and some ones</b>. Split it that way and the answer falls out.');
+    const d=q.d;
+    if(q.form==='add')  return bondSVG('?',10,d,'The two parts go together to make the whole.');
+    if(q.form==='subd') return bondSVG(10+d,'?',d,'One part is missing — what goes with the '+d+'?');
+    return bondSVG(10+d,10,'?','One part is missing — what goes with the 10?');
   }
   if(r.mode==='doublesSpeed'){
-    const nums=(q.parts||[]).filter(x=>typeof x==='number');
-    const n=Math.min(...nums);
-    const opts=[2,3,4,5,6,7,8,9].filter(x=>x!==n);
-    const e=opts[r.index%opts.length];
-    return bondSVG(2*e,e,e,'A double splits into <b>two equal parts</b>.');
+    const n=q.n;
+    if(q.form==='add') return bondSVG('?',n,n,'The two parts go together to make the whole.');
+    return bondSVG(2*n,n,'?','A double splits into <b>two equal parts</b>.');
   }
   return null;
 }
@@ -1258,19 +1265,15 @@ function lineSVG(h){
   return svg;}
 function frogXY(h,val){const lo=Math.floor(Math.min(h.start,h.ans)/10)*10-10,hi=lo+50;return (20+(val-lo)/(hi-lo)*560)/600*100;}
 function hopChartHTML(h,avatar){
-  const col=(h.start-1)%10, row=Math.floor((h.start-1)/10);
-  const c0=Math.min(Math.max(col-1,0),7);
-  const rows=h.dir>0?[row,row+1]:[row-1,row];
-  let cells='';
-  rows.forEach(rw=>{ for(let c=c0;c<c0+3;c++){
-    const n=rw*10+c+1;
-    const isStart=(n===h.start), isTarget=(n===h.ans);
-    const cls='hopcell'+(isStart?' here':'')+(isTarget?' target':'')+(!isStart&&!isTarget?' dim':'');
-    const id=isStart?' id="hopHere"':isTarget?' id="hopTarget"':'';
-    cells+=`<div class="${cls}"${id} style="background:${ONES_TINT[n%10]}">${isTarget?'?':n}${isStart?`<span class="who">${avatar}</span>`:''}</div>`;
-  }});
-  return `<div class="hopgrid">${cells}</div>
-    <div class="hopcap">Same column, ${h.dir>0?'one row <b>down</b>':'one row <b>up</b>'} — the ones digit never changes.</div>`;
+  const t=Math.floor(h.start/10), o=h.start%10;
+  return `<div class="pv2">
+    <div class="pvrow"><span class="pvlab">${avatar} ${h.start}</span>
+      <span class="pvcell tens">${t}<i>tens</i></span><span class="pvcell ones">${o}<i>ones</i></span></div>
+    <div class="pvmid"><span class="pvop">${h.dir>0?'+10 → one MORE ten':'−10 → one LESS ten'}</span>
+      <span class="pvsame">ones stay the same</span></div>
+    <div class="pvrow"><span class="pvlab dim">lands on</span>
+      <span class="pvcell tens gap" id="hopTens">?<i>tens</i></span><span class="pvcell ones keep">${o}<i>ones</i></span></div>
+  </div>`;
 }
 function renderHopper(){
   const r=round,h=r.hops[r.index],p=state.players[r.who];setScene(r.M.scene);busy=false;
@@ -1283,10 +1286,8 @@ function renderHopper(){
   $('#backBtn').addEventListener('click',renderHome);positionToken();
   document.querySelectorAll('.choice').forEach(b=>b.addEventListener('click',()=>{
     if(busy)return;
-    if(+b.dataset.v===h.ans){const tc=document.getElementById('hopTarget');
-      if(tc){tc.textContent=h.ans;tc.classList.remove('target');tc.classList.add('here');
-        const w=document.createElement('span');w.className='who';w.textContent=p.avatar;tc.appendChild(w);
-        const sc=document.getElementById('hopHere');if(sc){sc.classList.remove('here');const ow=sc.querySelector('.who');if(ow)ow.remove();}}
+    if(+b.dataset.v===h.ans){const tc=document.getElementById('hopTens');
+      if(tc){tc.innerHTML=`${Math.floor(h.ans/10)}<i>tens</i>`;tc.classList.remove('gap');}
       $('#feedback').innerHTML=`<div class="yay">${pick(YAYS)}</div>`;solveStep(true);}
     else{if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, `${h.start} ${h.dir>0?'+':'−'}10 = □`);}$('#feedback').innerHTML=`<div class="hintbox">A hop of ${h.dir>0?'+10':'−10'} keeps the SAME ones digit — ${h.start} keeps its ${h.start%10}!</div>`;mascotReact('encourage');}
   }));

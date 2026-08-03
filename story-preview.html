@@ -1,10 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kids' Progress</title>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
   :root{--ink:#2b2140;--soft:#6a5f86;--bg:#f4f2fb;--card:#fff;--line:#ece7f6;
     --good:#22b36b;--good-bg:#e3f7ec;--mid:#f2a431;--mid-bg:#fdf1dc;--low:#e8503b;--low-bg:#fde5e1;--none:#c9c2dd;
@@ -117,31 +111,11 @@
   .gkey{font-family:var(--disp);font-weight:600;font-size:1.6rem;padding:14px 0;border-radius:16px;background:#fff;border:none;box-shadow:0 5px 0 var(--line);cursor:pointer}
   .gkey.blank{background:transparent;box-shadow:none}
   #gerr{color:#e8503b;font-weight:800;min-height:22px;margin-top:10px}
-</style>
-</head>
-<body>
-<div id="gate">
-  <div style="font-size:2.4rem">🔒</div>
-  <h2>Grown-ups only</h2>
-  <p>Enter the code to see progress</p>
-  <div class="gdots" id="gdots"></div>
-  <div class="gpad" id="gpad"></div>
-  <div id="gerr"></div>
-</div>
-<div class="wrap">
-  <div class="top">
-    <h1>Kids' <span class="q">Progress</span></h1>
-    <div class="updated" id="updated"></div>
-  </div>
-  <div class="sub" id="sub">Loading…</div>
-  <div class="toolbar">
-    <button class="btn" id="refresh">↻ Refresh</button>
-    <button class="btn ghost" id="loadBtn">📂 Load a progress file</button>
-    <button class="btn ghost" id="demoBtn">👁 See a sample</button>
-    <input type="file" id="file" accept="application/json,.json">
-  </div>
-  <div id="content"></div>
-</div>
+ body{padding:18px} .wrap{max-width:620px;margin:0 auto}</style>
+<div style="display:none"><div id="gate"></div><div id="gdots"></div><div id="gpad"></div>
+<div id="gerr"></div><div id="content"></div><div id="updated"></div><div id="sub"></div></div>
+<div class="wrap"><div class="apptag">📚 Story Quest</div>
+<div class="device-tag">from Tori's iPad · Aug 3</div><div id="out"></div></div>
 <script>
 
 /* ---- passcode gate (kid-lock, same code as the games) ---- */
@@ -446,67 +420,6 @@ function sparkline(vals){
 function wireLogs(){ /* <details> handles open/close natively */ }
 
 /* ---------- data sources ---------- */
-const SHEET_URL = "https://script.google.com/macros/s/AKfycbxN-BmXkUg519oFxv8DGb6PfdAfNJfPC_FEaD42oaKCslSWOBqZakEGlVLipxAXxh3BOA/exec";
-async function pull(){
-  $('#sub').textContent='Checking for new results…';
-  try{
-    // Primary: Google Sheet (the reliable pipe). Falls back to the old Netlify function.
-    const url = (SHEET_URL && SHEET_URL.indexOf('http')===0) ? SHEET_URL : '/.netlify/functions/get-progress';
-    const res=await fetch(url,{headers:{'accept':'application/json'}});
-    if(!res.ok) throw 0;
-    const data=await res.json();
-    const snaps=(data.snapshots||data||[]).filter(Boolean);
-    if(snaps.length){ render(snaps); return; }
-    $('#sub').innerHTML='No results have arrived yet. They appear here after the kids play and close the app.';
-  }catch(e){
-    $('#sub').innerHTML='Automatic sync isn\'t connected yet (that\'s the one-time Netlify step). You can still tap <b>Load a progress file</b> or <b>See a sample</b> below.';
-    $('#content').innerHTML='';
-  }
-}
-function loadFile(file){
-  const fr=new FileReader();
-  fr.onload=()=>{ try{ const d=JSON.parse(fr.result);
-    const snaps = Array.isArray(d)?d : (d.snapshots?d.snapshots : [d]);
-    render(snaps); $('#sub').textContent='Loaded from file.';
-  }catch(e){ $('#sub').textContent='That file could not be read.'; } };
-  fr.readAsText(file);
-}
 
-/* ---------- demo ---------- */
-function demo(){
-  const now=Date.now(), day=864e5;
-  const snaps=[];
-  const iso=(dayAgo,h=18)=>new Date(now-dayAgo*day - (18-h)*36e5).toISOString();
-  // Thomas — Word Quest: distinct results each day (improving)
-  const tDays=[ // [dayAgo, gems, [ [mode,correct,wrong] per session that day ]]
-    [4,40,[['forest',6,4],['station',4,6]]],
-    [3,58,[['forest',7,3],['mountain',6,2]]],
-    [2,79,[['forest',8,2],['station',6,4]]],
-    [1,101,[['mountain',9,1],['station',7,3]]],
-    [0,127,[['forest',10,0],['station',9,1]]],
-  ];
-  const tlog=[]; let tgems=0;
-  tDays.forEach(([d,g,sess])=>{ tgems=g; sess.forEach(([m,c,wr],i)=>tlog.push({at:iso(d,17+i),mode:m,modeId:m,correct:c,total:c+wr,missed:[]})); });
-  snaps.push({app:'twinWordQuest',device:"Thomas's iPad",saved:iso(0,19),players:{thomas:{name:'Thomas',avatar:'🦊',gems:tgems,levels:{
-    forest:{plays:5,correct:41,total:49,missed:{said:2}},station:{plays:3,correct:20,total:24,missed:{was:2}},mountain:{plays:2,correct:15,total:18,missed:{}}
-  },log:tlog}}});
-  // Tori — Math Quest: distinct daily results
-  const oDays=[[3,30,[['triangle',7,3]]],[2,52,[['hopper',9,1],['pairs',8,2]]],[1,70,[['triangle',9,1]]],[0,88,[['hopper',10,0],['pairs',9,1]]]];
-  const olog=[]; let ogems=0;
-  oDays.forEach(([d,g,sess])=>{ ogems=g; sess.forEach(([m,c,wr],i)=>olog.push({at:iso(d,17+i),modeId:m,correct:c,wrong:wr,explored:false})); });
-  snaps.push({app:'mathQuest',device:"Tori's iPad",saved:iso(0,19),players:{tori:{name:'Tori',avatar:'🦄',gems:ogems,levels:{
-    triangle:{plays:2,correct:16,wrong:4,total:20,missed:{}},hopper:{plays:2,correct:19,wrong:1,total:20,missed:{}},pairs:{plays:2,correct:17,wrong:3,total:20,missed:{}}
-  },log:olog}}});
-  render(snaps);
-  $('#updated').textContent='Sample data';
-  $('#sub').textContent='Sample: true day-by-day history.';
-}
-
-$('#refresh').onclick=pull;
-$('#loadBtn').onclick=()=>$('#file').click();
-$('#file').onchange=e=>{ if(e.target.files&&e.target.files[0]) loadFile(e.target.files[0]); };
-$('#demoBtn').onclick=demo;
-pull();
+document.getElementById('out').innerHTML = kidCard('storyQuest', {"name": "Tori", "avatar": "\ud83e\udd84", "day": "2026-08-03", "gems": 2, "books": [{"title": "the dog runs away", "setN": "07", "at": "2026-08-03T09:12:00.000Z", "caps": ["the dog is sleping", "he wox up and see a cat", "", "tori fowned him at the park"]}, {"title": "my birthday", "setN": "22", "at": "2026-08-03T09:40:00.000Z", "caps": ["i had a cake with 8 candls", "my frends came over", "we playd in the yard", "i was so tired"]}]});
 </script>
-</body>
-</html>

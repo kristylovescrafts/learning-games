@@ -86,6 +86,43 @@ var $=function(i){return document.getElementById(i);};
 var el=$('screen');
 
 function save(k,v){try{localStorage.setItem('sq_'+k,JSON.stringify(v));}catch(e){}}
+
+/* ---------- send finished books to the grown-up dashboard ---------- */
+var SHEET_URL='https://script.google.com/macros/s/AKfycbxN-BmXkUg519oFxv8DGb6PfdAfNJfPC_FEaD42oaKCslSWOBqZakEGlVLipxAXxh3BOA/exec';
+function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function deviceName(){ return load('device',''); }
+function storyPayload(){
+  var day=todayStr(), all=load('shelfBooks',[]), players={};
+  all.forEach(function(b){
+    if(!b.when) return;
+    var d=new Date(b.when);
+    var bd=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+    if(bd!==day) return;                                   // today's books only
+    var k=String(b.who||'').toLowerCase();
+    if(k!=='thomas' && k!=='tori') return;
+    var pl=players[k]||(players[k]={name:b.who,avatar:k==='thomas'?'\uD83E\uDD8A':'\uD83E\uDD84',
+      day:day,gems:0,levels:{},log:[],books:[]});
+    pl.books.push({title:b.title||'',setN:b.setN||'',at:new Date(b.when).toISOString(),
+      caps:(b.caps||[]).map(function(c){return String(c||'');})});
+  });
+  Object.keys(players).forEach(function(k){
+    var pl=players[k];
+    // the dashboard skips a child with no data at all, so give it something real
+    pl.gems=pl.books.length;
+    pl.log=pl.books.map(function(b){return {at:b.at,mode:'Story',modeId:'story',title:b.title};});
+  });
+  return JSON.stringify({app:'storyQuest',kind:'daily',day:day,saved:new Date().toISOString(),
+    device:deviceName(),players:players});
+}
+function sendStories(){
+  if(!SHEET_URL || SHEET_URL.indexOf('http')!==0) return;
+  try{
+    fetch(SHEET_URL,{method:'POST',mode:'no-cors',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({payload:storyPayload()}).toString()})
+      .catch(function(){});   /* offline / no signal — the book is still saved locally */
+  }catch(e){}
+}
 function load(k,d){try{var v=localStorage.getItem('sq_'+k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function esc(s){return String(s||'').replace(/[&<>"]/g,function(c){
   return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
@@ -268,6 +305,7 @@ function seal(){
   var sh=load('shelfBooks',[]);
   sh.unshift({title:t,who:S.who,when:Date.now(),setN:S.set.n,ext:S.set.ext,caps:S.caps});
   save('shelfBooks',sh.slice(0,60));
+  sendStories();
   book(g);
 }
 
@@ -294,6 +332,14 @@ function grown(){
       '<button class="'+(m==='spell'?'on':'')+'" onclick="setMode(\'spell\')">Say &amp; spell</button>'+
       '<button class="'+(m==='type'?'on':'')+'" onclick="setMode(\'type\')">Type it</button>'+
     '</div></div>'+
+    '<div class="gu"><h4>Progress dashboard</h4>'+
+      '<div style="font-size:14px;color:var(--soft)">Finished books are sent to the '+
+      'grown-up dashboard so you can read what they wrote. Spelling is sent exactly as '+
+      'they typed it.</div>'+
+      '<button class="quiet" style="margin-top:6px" onclick="setDevice()">This iPad is called: '+
+      (deviceName()||'(not set)')+'</button>'+
+      '<button class="quiet" onclick="resend()">Re-send today\'s books</button>'+
+    '</div>'+
     '<div class="gu"><h4>'+sets.length+' picture sets found</h4>'+
       '<div style="font-size:14px;color:var(--soft)">Add more by putting setNN-1 through '+
       'setNN-4 into the story-pictures folder.</div></div>'+
@@ -304,6 +350,9 @@ function grown(){
     '<button class="quiet" onclick="boot()">Back</button>';
 }
 function setMode(m){ save('mode',m); S.mode=m; grown(); }
+function setDevice(){ var n=prompt('What should this device be called?',deviceName()||'');
+  if(n!==null){ save('device',n.trim()); grown(); } }
+function resend(){ sendStories(); alert("Today's books have been sent."); }
 function openBook(i){
   var b=load('shelfBooks',[])[i];
   S.title=b.title; S.who=b.who; S.caps=b.caps; S.set={n:b.setN,ext:b.ext||'png'};

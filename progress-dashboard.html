@@ -44,6 +44,7 @@
   .capn{flex:0 0 20px;height:20px;border-radius:50%;background:#f3f0fb;color:var(--soft);
     font-weight:800;font-size:.7rem;text-align:center;line-height:20px}
   .cap.blank span:last-child{color:var(--soft);font-style:italic}
+  .wasline{margin-top:3px;font-size:.8rem;color:var(--soft);font-style:italic}
   .legend{margin:6px 0 2px;font-weight:700;font-size:.78rem;color:var(--soft);background:#f7f5fd;border-radius:10px;padding:7px 10px;line-height:1.35}
   .legend b{color:var(--ink)}
   .group{font-family:var(--disp);font-weight:700;color:var(--soft);font-size:.82rem;letter-spacing:.04em;text-transform:uppercase;margin:16px 0 6px}
@@ -236,13 +237,18 @@ function levelRow(m,L){
 function storyCard(player){
   const books=player.books||[];
   const body=books.map(b=>{
-    const caps=(b.caps||[]).map((c,i)=>c.trim()
-      ? `<div class="cap"><span class="capn">${i+1}</span><span>${escHtml(c)}</span></div>`
-      : `<div class="cap blank"><span class="capn">${i+1}</span><span>(left blank)</span></div>`).join('');
+    const first=b.first||[];
+    const caps=(b.caps||[]).map((c,i)=>{
+      const was=(first[i]!=null && first[i]!==c && String(first[i]).trim())
+        ? `<div class="wasline">first draft: ${escHtml(first[i])}</div>` : '';
+      return c.trim()
+        ? `<div class="cap"><span class="capn">${i+1}</span><span>${escHtml(c)}${was}</span></div>`
+        : `<div class="cap blank"><span class="capn">${i+1}</span><span>(left blank)${was}</span></div>`;
+    }).join('');
     const words=(b.caps||[]).join(' ').trim().split(/\s+/).filter(Boolean).length;
     return `<div class="book"><div class="bookhead">
         <div class="booktitle">“${escHtml(b.title||'untitled')}”</div>
-        <div class="bookmeta">${words} word${words===1?'':'s'}${b.setN?` · set ${b.setN}`:''}${b.at?` · ${fmtWhen(b.at)}`:''}</div>
+        <div class="bookmeta">${words} word${words===1?'':'s'}${b.setN?` · set ${b.setN}`:''}${b.edited?' · ✏️ edited together':''}${b.at?` · ${fmtWhen(b.at)}`:''}</div>
       </div>${caps}</div>`;
   }).join('');
   return `<div class="kidcard">
@@ -280,7 +286,8 @@ function kidCard(app,player){
     <div class="legend">Copied exactly as typed — spelling left alone on purpose.</div>`+
     sents.map(x=>`<div class="book"><div class="bookhead">
         <div class="bookmeta">word: <b>${escHtml(x.word||'')}</b>${x.plays?` · listened ${x.plays}×`:''}${x.at?` · ${fmtWhen(x.at)}`:''}</div>
-      </div><div class="cap"><span class="capn">✍️</span><span>${escHtml(x.typed||'')}</span></div></div>`).join(''):'';
+      </div>${x.said?`<div class="cap"><span class="capn">🔊</span><span>${escHtml(x.said)}</span></div>`:''}
+      <div class="cap"><span class="capn">✍️</span><span>${escHtml(x.typed||'')}</span></div></div>`).join(''):'';
   const anyFT=meta.order.some(m=>levels[m[0]]&&levels[m[0]].firstTry!=null);
   const legend=anyFT?`<div class="legend">Scores below are <b>first-try accuracy</b> — how often it was right without a second go.</div>`:'';
   const log=(player.log||[]).slice(-10).reverse();

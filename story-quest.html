@@ -106,7 +106,9 @@ function storyPayload(){
     var pl=players[k]||(players[k]={name:b.who,avatar:k==='thomas'?'\uD83E\uDD8A':'\uD83E\uDD84',
       day:day,gems:0,levels:{},log:[],books:[]});
     pl.books.push({title:b.title||'',setN:b.setN||'',at:new Date(b.when).toISOString(),
-      caps:(b.caps||[]).map(function(c){return String(c||'');})});
+      edited:!!b.edited,
+      caps:(b.caps||[]).map(function(c){return String(c||'');}),
+      first:(b.first||[]).map(function(c){return String(c||'');})});
   });
   Object.keys(players).forEach(function(k){
     var pl=players[k];
@@ -314,7 +316,8 @@ function seal(){
   S.title=t;
   var g=load('gems',0)+8; save('gems',g);
   var sh=load('shelfBooks',[]);
-  sh.unshift({title:t,who:S.who,when:Date.now(),setN:S.set.n,ext:S.set.ext,caps:S.caps});
+  S.when=Date.now();
+  sh.unshift({title:t,who:S.who,when:S.when,setN:S.set.n,ext:S.set.ext,caps:S.caps.slice(),first:S.caps.slice()});
   save('shelfBooks',sh.slice(0,60));
   sendStories();
   book(g);
@@ -330,10 +333,41 @@ function book(g){
     }).join('')+
     '<p style="text-align:center;font-weight:800">&#128142; '+g+' gems</p>'+
     '<button class="next" onclick="window.print()">&#128424; Print my book</button>'+
+    '<button class="quiet" onclick="editBook()">&#9999;&#65039; Fix the words</button>'+
     '<button class="quiet" onclick="who()">write another</button>'+HOME;
   window.scrollTo(0,0);
 }
 
+function editBook(){
+  var s=S.set;
+  el.innerHTML='<h2>Fix the words</h2>'+
+    '<p class="lede">Change anything you like, then save. Nothing is marked wrong.</p>'+
+    [1,2,3,4].map(function(k){ var i=k-1;
+      return '<div class="panel"><div class="n">PICTURE '+k+'</div>'+
+        '<img src="'+url(s,k)+'" alt="">'+
+        '<textarea id="e'+i+'" oninput="ekeep('+i+')">'+esc(S.caps[i]||'')+'</textarea>'+
+      '</div>';
+    }).join('')+
+    '<div class="panel"><div class="n">TITLE</div>'+
+      '<textarea id="eti" style="min-height:0" oninput="S.title=this.value">'+esc(S.title||'')+'</textarea></div>'+
+    '<button class="next" onclick="saveEdits()">&#128190; Save the changes</button>'+
+    '<button class="quiet" onclick="book(load(\'gems\',0))">back without saving</button>'+HOME;
+  window.scrollTo(0,0);
+}
+function ekeep(i){ S.caps[i]=$('e'+i).value; }
+function saveEdits(){
+  for(var i=0;i<4;i++){ var t=$('e'+i); if(t) S.caps[i]=t.value; }
+  var ti=$('eti'); if(ti && ti.value.trim()) S.title=ti.value.trim();
+  var sh=load('shelfBooks',[]), hit=-1;
+  for(var j=0;j<sh.length;j++){ if(S.when? sh[j].when===S.when : (sh[j].title===S.title&&sh[j].who===S.who)){ hit=j; break; } }
+  if(hit>=0){
+    if(!sh[hit].first) sh[hit].first=(sh[hit].caps||[]).slice();  /* keep the very first draft */
+    sh[hit].caps=S.caps.slice(); sh[hit].title=S.title; sh[hit].edited=Date.now();
+    save('shelfBooks',sh);
+    sendStories();
+  }
+  book(load('gems',0));
+}
 function grown(){
   if(prompt('Grown-up code')!=='1921') return;
   var m=load('mode','talk'), sh=load('shelfBooks',[]);
@@ -366,7 +400,8 @@ function setDevice(){ var n=prompt('What should this device be called?',deviceNa
 function resend(){ sendStories(); alert("Today's books have been sent."); }
 function openBook(i){
   var b=load('shelfBooks',[])[i];
-  S.title=b.title; S.who=b.who; S.caps=b.caps; S.set={n:b.setN,ext:b.ext||'png'};
+  S.title=b.title; S.who=b.who; S.caps=(b.caps||[]).slice(); S.when=b.when;
+  S.set={n:b.setN,ext:b.ext||'png'};
   book(load('gems',0));
 }
 

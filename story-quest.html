@@ -46,6 +46,9 @@ textarea:focus{outline:none;border-color:var(--ink)}
 .next:active{transform:translateY(3px);box-shadow:0 1px 0 #1d6b41}
 .quiet{background:none;border:0;color:var(--soft);font:inherit;font-size:14px;
   text-decoration:underline;cursor:pointer;padding:14px 0;display:block;margin:0 auto}
+.guestbar{background:#fff4d6;border:2px solid #e8c25a;border-radius:12px;padding:10px 12px;
+  font-size:14px;font-weight:700;margin:0 0 12px}
+.guestbtn small{font-weight:600;opacity:.7;font-size:13px}
 .home{display:block;width:fit-content;margin:22px auto 6px;padding:10px 18px;border-radius:999px;
   background:var(--card);border:2px solid var(--line);color:var(--soft);font-weight:800;
   font-size:14px;text-decoration:none}
@@ -219,13 +222,16 @@ function who(){
   el.innerHTML='<h2>Who is writing?</h2>'+
     '<button class="name" onclick="go(\'Thomas\')">&#128994; Thomas</button>'+
     '<button class="name" onclick="go(\'Tori\')">&#128311; Tori</button>'+
+    '<button class="name guestbtn" onclick="go(\'Guest\')">&#128100; Guest <small>(just trying it out)</small></button>'+
     '<button class="quiet" onclick="grown()">Grown-ups</button>'+HOME;
 }
-function go(w){ S.who=w; shelf(); }
+function go(w){ S.who=w; S.guest=(w==='Guest'); shelf(); }
+function guestBar(){ return S.guest
+  ? '<div class="guestbar">&#128100; Guest mode — nothing is saved and nothing is sent to the grown-up dashboard.</div>' : ''; }
 
 function shelf(){
   el.innerHTML='<h2>Pick a story</h2>'+
-    '<p class="lede">These pictures tell a story. You write the words.</p>'+
+    guestBar()+'<p class="lede">These pictures tell a story. You write the words.</p>'+
     '<div class="shelf">'+
       sets.map(function(s,i){
         return '<button class="pickset" onclick="start('+i+')">'+
@@ -314,6 +320,7 @@ function seal(){
   var t=($('ti').value||'').trim();
   if(!t){ $('say9').innerHTML='<div class="oops">give it a title first</div>'; return; }
   S.title=t;
+  if(S.guest){ book(load('gems',0)); return; }   /* no gems, no shelf, no report */
   var g=load('gems',0)+8; save('gems',g);
   var sh=load('shelfBooks',[]);
   S.when=Date.now();
@@ -325,7 +332,7 @@ function seal(){
 
 function book(g){
   var s=S.set;
-  el.innerHTML='<div class="cover"><h3>'+esc(S.title)+'</h3>'+
+  el.innerHTML=guestBar()+'<div class="cover"><h3>'+esc(S.title)+'</h3>'+
     '<span>written by '+esc(S.who)+'</span></div>'+
     [1,2,3,4].map(function(k){
       return '<div class="panel"><img src="'+url(s,k)+'" alt="">'+
@@ -358,6 +365,7 @@ function ekeep(i){ S.caps[i]=$('e'+i).value; }
 function saveEdits(){
   for(var i=0;i<4;i++){ var t=$('e'+i); if(t) S.caps[i]=t.value; }
   var ti=$('eti'); if(ti && ti.value.trim()) S.title=ti.value.trim();
+  if(S.guest){ book(load('gems',0)); return; }
   var sh=load('shelfBooks',[]), hit=-1;
   for(var j=0;j<sh.length;j++){ if(S.when? sh[j].when===S.when : (sh[j].title===S.title&&sh[j].who===S.who)){ hit=j; break; } }
   if(hit>=0){

@@ -542,6 +542,7 @@ function problemLabel(q){
   return null;
 }
 function mixOn(){ return !!state.mixForms; }
+function fullEqHTML(a,op,b,ans){return `<div class="fulleq">${a} <span>${op} ${b}</span> = <b>${ans}</b></div>`;}
 function markMiss(){ if(typeof round==='object'&&round){ round.wrongOn=round.wrongOn||{}; round.wrongOn[round.index||0]=true; } }
 function noteMiss(modeId,item){
   const p=P(); if(!p.levels)p.levels={};
@@ -898,7 +899,7 @@ function startRound(mode){
     round={mode,M,who,correct:0,wrong:0,total:10,index:0,problems:prob,input:'',render:renderNumpad};renderNumpad();return;}
   if(M.kind==='hopper'){round={mode,M,who,correct:0,wrong:0,total:10,index:0,hops:buildHops(),render:renderHopper};renderHopper();return;}
   if(M.kind==='hundred'){const dir=Math.random()<0.65?10:-10;const start=dir>0?(11+rnd(39)):(61+rnd(38));
-    round={mode,M,who,correct:0,wrong:0,total:10,index:0,cur:start,dir,startNum:start,render:renderHundred};renderHundred();return;}
+    round={mode,M,who,correct:0,wrong:0,total:10,index:0,cur:start,dir,startNum:start,seq:[start],render:renderHundred};renderHundred();return;}
 }
 function levelDone(modeId){ const p=P(); const L=p.levels&&p.levels[modeId]; if(!L||!L.total) return false;
   return (L.correct||0)/L.total >= 0.6; }
@@ -1236,7 +1237,7 @@ function modeHead(){const r=round;return `<div class="mhead"><div class="title">
 function padHTML(){const keys=['1','2','3','4','5','6','7','8','9','del','0','go'];
   return `<div class="pad">`+keys.map(k=>k==='del'?`<button class="key del" data-k="del">⌫</button>`:k==='go'?`<button class="key go" data-k="go">✓</button>`:`<button class="key" data-k="${k}">${k}</button>`).join('')+`</div>`;}
 function renderNumpad(){
-  const r=round,q=r.problems[r.index];setScene(r.M.scene);busy=false;r.input='';
+  const r=round,q=r.problems[r.index];setScene(r.M.scene);busy=false;r.input='';r.stepDelay=null;
   const eq=q.parts?`<div class="eq">${q.parts.map(x=>x==='▢'?`<span class="blank empty" id="blank">?</span>`:`<span>${x}</span>`).join('')}</div>`
                   :`<div class="eq"><span class="blank empty" id="blank">?</span></div>`;
   screen().innerHTML=modeHead()+`
@@ -1251,7 +1252,10 @@ function bindPad(q){
     if(key==='del')round.input=round.input.slice(0,-1);
     else if(key==='go'){
       if(round.input==='')return;
-      if(parseInt(round.input,10)===q.answer){$('#feedback').innerHTML=`<div class="yay">${pick(YAYS)}</div>`;solveStep(true);}
+      if(parseInt(round.input,10)===q.answer){
+        let eq='';
+        if(round.mode==='quick'&&q.n!=null){eq=fullEqHTML(q.n,q.answer>q.n?'+':'−',10,q.answer);round.stepDelay=4500;}
+        $('#feedback').innerHTML=`<div class="yay">${pick(YAYS)}</div>`+eq;solveStep(true);}
       else{if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, problemLabel(q) || (q.q!=null?String(q.q):null));}$('#feedback').innerHTML=`<div class="hintbox">${q.hint}</div>`;mascotReact('encourage');round.input='';draw();}
       return;
     }else if(round.input.length<3)round.input=(round.input==='0'?'':round.input)+key;
@@ -1293,9 +1297,8 @@ function renderHopper(){
     if(busy)return;
     if(+b.dataset.v===h.ans){const tc=document.getElementById('hopTens');
       if(tc){tc.innerHTML=`${Math.floor(h.ans/10)}<i>tens</i>`;tc.classList.remove('gap');}
-      $('#feedback').innerHTML=`<div class="yay">${pick(YAYS)}</div>
-        <div class="fulleq">${h.start} <span>${h.dir>0?'+':'−'} 10</span> = <b>${h.ans}</b></div>`;
-      round.stepDelay=2100; solveStep(true);}
+      $('#feedback').innerHTML=`<div class="yay">${pick(YAYS)}</div>`+fullEqHTML(h.start,h.dir>0?'+':'−',10,h.ans);
+      round.stepDelay=4500; solveStep(true);}
     else{if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, `${h.start} ${h.dir>0?'+':'−'}10 = □`);}$('#feedback').innerHTML=`<div class="hintbox">A hop of ${h.dir>0?'+10':'−10'} keeps the SAME ones digit — ${h.start} keeps its ${h.start%10}!</div>`;mascotReact('encourage');}
   }));
 }
@@ -1312,21 +1315,29 @@ function renderHundred(){
       <div class="feedback" id="feedback" style="min-height:26px;text-align:center;font-weight:800;color:var(--ink-soft);margin-top:6px"></div></div>`;
   $('#backBtn').addEventListener('click',renderHome);positionToken();wireHundred();
 }
-function updateHundredPrompt(){const r=round;const el=$('#cprompt');if(el)el.innerHTML=`Start at <span class="big">${r.cur}</span> — tap <span class="big">${r.dir>0?'10 MORE':'10 LESS'}</span>`;}
+function updateHundredPrompt(){const r=round;const el=$('#cprompt');if(!el)return;
+  const turn=r.turned?`<div style="font-size:.8rem;font-weight:700;color:#16978b;margin-top:4px">🔄 Edge of the chart — now hop the other way!</div>`:'';
+  el.innerHTML=`Start at <span class="big">${r.cur}</span> — tap <span class="big">${r.dir>0?'10 MORE':'10 LESS'}</span>`+turn;
+  r.turned=false;}
 function wireHundred(){
   const r=round;const startCell=document.querySelector(`.hc[data-n="${r.startNum}"]`);if(startCell)startCell.classList.add('start');
   updateHundredPrompt();
   document.querySelectorAll('.hc').forEach(c=>c.addEventListener('click',()=>{
     if(busy)return;const n=+c.dataset.n,want=r.cur+r.dir;
     if(n===want){c.classList.add('lit');r.cur=want;
-      const seq=[];let x=r.startNum;seq.push(x);for(let i=0;i<=r.index;i++){x+=r.dir;seq.push(x);}
-      const note=$('#onesnote');if(note)note.innerHTML=`${seq.join(' → ')} — the ones digit stays <b>${((r.cur%10)+10)%10}</b>!`;
-      const fb=$('#feedback');if(fb)fb.innerHTML='';
+      r.seq=r.seq||[r.startNum];r.seq.push(want);
+      const tail=r.seq.length>6?['…'].concat(r.seq.slice(-6)):r.seq;
+      const note=$('#onesnote');if(note)note.innerHTML=`${tail.join(' → ')} — the ones digit stays <b>${((r.cur%10)+10)%10}</b>!`;
+      const fb=$('#feedback');if(fb)fb.innerHTML=fullEqHTML(want-r.dir,r.dir>0?'+':'−',10,want);
+      /* the chart stops at 1 and 100 — turn around rather than asking for a
+         square that doesn't exist (this made the level impossible to finish) */
+      const nxt=r.cur+r.dir;
+      if(nxt<1||nxt>100){ r.dir=-r.dir; r.turned=true; }
       solveStep(false);
       if(round&&round.index<round.total)updateHundredPrompt();
     }else if(!c.classList.contains('lit')&&!c.classList.contains('start')){
       c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),400);
-      if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, `${r.start} ${r.dir>0?'+':'−'}10 = □`);}$('#feedback').innerHTML=`<div class="hintbox">${r.dir>0?'+10 slides one row DOWN — same column!':'−10 slides one row UP — same column!'}</div>`;mascotReact('encourage');
+      if(round){round.wrong=(round.wrong||0)+1;markMiss();noteMiss(round.mode, `${r.cur} ${r.dir>0?'+':'−'}10 = □`);}$('#feedback').innerHTML=`<div class="hintbox">${r.dir>0?'+10 slides one row DOWN — same column!':'−10 slides one row UP — same column!'}</div>`;mascotReact('encourage');
     }
   }));
 }

@@ -449,17 +449,33 @@ function wireLogs(){ /* <details> handles open/close natively */ }
 const SHEET_URL = "https://script.google.com/macros/s/AKfycbxN-BmXkUg519oFxv8DGb6PfdAfNJfPC_FEaD42oaKCslSWOBqZakEGlVLipxAXxh3BOA/exec";
 async function pull(){
   $('#sub').textContent='Checking for new results…';
+  const url = (SHEET_URL && SHEET_URL.indexOf('http')===0) ? SHEET_URL : '/.netlify/functions/get-progress';
+  let snaps=null, why='';
   try{
-    // Primary: Google Sheet (the reliable pipe). Falls back to the old Netlify function.
-    const url = (SHEET_URL && SHEET_URL.indexOf('http')===0) ? SHEET_URL : '/.netlify/functions/get-progress';
     const res=await fetch(url,{headers:{'accept':'application/json'}});
-    if(!res.ok) throw 0;
-    const data=await res.json();
-    const snaps=(data.snapshots||data||[]).filter(Boolean);
-    if(snaps.length){ render(snaps); return; }
-    $('#sub').innerHTML='No results have arrived yet. They appear here after the kids play and close the app.';
-  }catch(e){
-    $('#sub').innerHTML='Automatic sync isn\'t connected yet (that\'s the one-time Netlify step). You can still tap <b>Load a progress file</b> or <b>See a sample</b> below.';
+    if(!res.ok){ why=`the sheet replied with error ${res.status}`+
+      (res.status===403?' — the Apps Script deployment is set to private. In Apps Script open Deploy \u2192 Manage deployments, click the pencil, and set <b>Who has access: Anyone</b>.'
+      :res.status===404?' — that deployment URL no longer exists. If you ever clicked \u201cNew deployment\u201d instead of the pencil, the URL changed and this page is still pointing at the old one.':''); }
+    else{
+      const data=await res.json();
+      snaps=(data.snapshots||data||[]).filter(Boolean);
+    }
+  }catch(e){ why='the sheet could not be reached (no network, or the request was blocked)'; }
+
+  if(why){
+    $('#sub').innerHTML=`Couldn't load progress \u2014 ${why}<br><b>Nothing has been lost</b> \u2014 every result is still in your Google Sheet. `+
+      `Once this connects, all past days come back automatically.`;
+    $('#content').innerHTML=''; return;
+  }
+  if(!snaps || !snaps.length){
+    $('#sub').innerHTML='Connected fine, but the sheet has no rows yet. Results appear after the kids play.';
+    $('#content').innerHTML=''; return;
+  }
+  // render OUTSIDE the try, so a display bug can never masquerade as a sync failure
+  try{ render(snaps); }
+  catch(e){
+    $('#sub').innerHTML='Loaded '+snaps.length+' result'+(snaps.length===1?'':'s')+
+      ' from the sheet, but this page hit an error drawing them: <b>'+String(e && e.message || e)+'</b>';
     $('#content').innerHTML='';
   }
 }

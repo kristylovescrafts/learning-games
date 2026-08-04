@@ -176,6 +176,7 @@ const META={
     ["beach","🏖️","Sentence Builder Beach","Reading"],
     ["mountain","⛰️","Missing Letter Mountain","Spelling"],
     ["station","🚀","Spell It Space Station","Spelling"],
+    ["dictation","✍️","Spell a Sentence","Everything",true],
     ["castle","🏰","Final Word Castle","Everything"]
   ]},
   storyQuest:{ title:"📚 Story Quest", story:true, order:[] },
@@ -274,6 +275,12 @@ function kidCard(app,player){
     extra=`<div class="chips"><span class="chip">💪 strongest: <b>${easy.ico} ${easy.name}</b></span>`+
       (hard.name!==easy.name?`<span class="chip">🎯 hardest: <b>${hard.ico} ${hard.name}</b></span>`:'')+`</div>`;
   }
+  const sents=player.sentences||[];
+  const sentBlock=sents.length?`<div class="group">✍️ Sentences they wrote</div>
+    <div class="legend">Copied exactly as typed — spelling left alone on purpose.</div>`+
+    sents.map(x=>`<div class="book"><div class="bookhead">
+        <div class="bookmeta">word: <b>${escHtml(x.word||'')}</b>${x.plays?` · listened ${x.plays}×`:''}${x.at?` · ${fmtWhen(x.at)}`:''}</div>
+      </div><div class="cap"><span class="capn">✍️</span><span>${escHtml(x.typed||'')}</span></div></div>`).join(''):'';
   const anyFT=meta.order.some(m=>levels[m[0]]&&levels[m[0]].firstTry!=null);
   const legend=anyFT?`<div class="legend">Scores below are <b>first-try accuracy</b> — how often it was right without a second go.</div>`:'';
   const log=(player.log||[]).slice(-10).reverse();
@@ -291,6 +298,7 @@ function kidCard(app,player){
         <div class="meta">${tried.length?`${tried.length} level${tried.length===1?'':'s'} this day`:'no scored levels this day'}</div></div></div>
     ${extra}
     ${legend}
+    ${sentBlock}
     ${rows}
     ${notTried.length?`<div class="not-tried-note">🚧 Hasn't tried yet: ${notTried.join(', ')}</div>`:''}
     ${sessions}
@@ -318,7 +326,7 @@ function render(snapshots){
     ['thomas','tori'].forEach(k=>{
       const p=s.players[k]; if(!p) return;
       // skip a blank/empty twin that rode along on the other kid's report
-      const hasData=(p.gems>0) || (p.levels && Object.keys(p.levels).length>0) || (p.log && p.log.length>0) || (p.books && p.books.length>0);
+      const hasData=(p.gems>0) || (p.levels && Object.keys(p.levels).length>0) || (p.log && p.log.length>0) || (p.books && p.books.length>0) || (p.sentences && p.sentences.length>0);
       if(!hasData) return;
       const key=s.app+'|'+k; if(seen[key]) return; seen[key]=1;
       (perApp[s.app]=perApp[s.app]||[]).push({snap:s,child:k});
